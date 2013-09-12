@@ -54,7 +54,7 @@ public class DynamicWarpingC3 {
   }
 
   /**
-   * Constructs a 2D dynamic warping.
+   * Constructs a 3D dynamic warping.
    * @param u1Min minimum shift between PP and PS1.
    * @param u1Max maximum shift between PP and PS1.
    * @param uSMin minimum shift between PS1 and PS2.
@@ -100,6 +100,18 @@ public class DynamicWarpingC3 {
 
   public Sampling getShiftSamplingS() {
     return _suS;
+  }
+
+  public Sampling getSampling1() {
+    return _s1;
+  }
+
+  public Sampling getSampling2() {
+    return _s2;
+  }
+
+  public Sampling getSampling3() {
+    return _s2;
   }
 
   /**

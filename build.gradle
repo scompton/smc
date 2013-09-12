@@ -1,6 +1,6 @@
 apply plugin: 'java'
 
-defaultTasks 'compileJava'
+defaultTasks 'jar'
 
 dependencies {
   compile fileTree('../jtk/build/libs') // for edu_mines_jtk.jar

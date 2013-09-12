@@ -117,7 +117,7 @@ public class KnownShiftUtil {
     if (!checkShift(iu,i1,mps))
       throw new UnphysicalShiftException(xu,x1,iu,i1,mps[0]);
     int i2 = _s2.indexOfNearest(x2);
-//    System.out.println("ErrorMapUtil.add: iu="+iu+", i1="+i1+", i2="+i2);
+//    print("ErrorMapUtil.add: iu="+iu+", i1="+i1+", i2="+i2);
     List<Integer> list = _errorMap.get(i2);
     if (list==null)
       list = new LinkedList<>();
@@ -146,7 +146,7 @@ public class KnownShiftUtil {
     int i3 = _s3.indexOfNearest(x3);
     int n2 = _s2.getCount();
     int i23 = i2+(i3*n2);
-    System.out.println("i2="+i2+", i3="+i3+", i23="+i23);
+    print("i2="+i2+", i3="+i3+", i23="+i23);
     List<Integer> list = _errorMap.get(i23);
     if (list==null)
       list = new LinkedList<>();
@@ -407,6 +407,17 @@ public class KnownShiftUtil {
 //    return g1New;
 //  }
 
+  public static int[] toSamples(Sampling su, Sampling s1, float[] u1) {
+    if (u1==null) return null;
+    int n = u1.length;
+    int[] l1 = new int[n];
+    for (int i=0; i<n; i+=2) {
+      l1[i  ] = su.indexOfNearest(u1[i  ]);
+      l1[i+1] = s1.indexOfNearest(u1[i+1]);
+    }
+    return l1;
+  }
+
   /**
    * 
    * @param g1
@@ -457,6 +468,63 @@ public class KnownShiftUtil {
     return g1New;
   }
 
+  public static float[] getG1(
+      Sampling s1, float[] g1, float[] u1, double[] r1min, double[] r1max)
+  {
+    if (u1==null) return g1;
+    List<Float> g1KeepList = new ArrayList<>();
+    List<Float> g1KnownList = new ArrayList<>();
+    int ng1 = g1.length;
+    float first = g1[0    ];
+    float last  = g1[ng1-1];
+    g1KeepList.add(first);
+    g1KeepList.add(last);
+
+    // Add known shift x1 coordinates unless they are out of bounds.
+    int nx1 = u1.length/2;
+    int c = 0;
+    for (int ix1=1; ix1<u1.length; ix1+=2) {
+      float x1 = u1[ix1];
+      if (x1>first && x1<last) {
+        g1KnownList.add(x1);
+        c++;
+      }
+    }
+    if (c!=nx1)
+      print("WARNING: Only "+c+" known shifts out of "+nx1+" are in bounds.");
+
+    // Determine which g1 coordinates to keep.
+    for (int ig1=1; ig1<ng1-1; ig1++) {
+      int i1 = s1.indexOfNearest(g1[ig1]);
+      double rmin = r1min[i1];
+      double rmax = r1max[i1];
+      boolean add = true;
+      for (float x1New : g1KnownList) {
+        int i1New = s1.indexOfNearest(x1New);
+        // int i1New = (int)(x1New+0.5f);
+        double dg = abs(i1-i1New);
+        if (dg*(abs(rmax-rmin))<1.0) {
+          add = false;
+          break;
+        }
+      }
+      if (add)
+        g1KeepList.add(g1[ig1]);
+    }
+
+    // Combine the known shift x1 coordinates and the remaining g1 coordinates.
+    g1KnownList.addAll(g1KeepList);
+    Collections.sort(g1KnownList);
+    int ng1New = g1KnownList.size();
+    float[] g1New = new float[ng1New];
+    int ig1=0;
+    for (float x1 : g1KnownList) {
+      g1New[ig1] = x1;
+      ig1++;
+    }
+    return g1New;
+  }
+
   public static void main(String[] args) {
     int nl = 169;
     int n1 = 1501;
@@ -483,7 +551,7 @@ public class KnownShiftUtil {
     Map<Integer,int[]> map = emu.getMap();
     for (Integer integer : map.keySet()) {
       int[] l1 = map.get(integer);
-      System.out.println("il coordinate array for index "+integer+":");
+      print("il coordinate array for index "+integer+":");
       dump(l1);
     }
 
@@ -500,7 +568,7 @@ public class KnownShiftUtil {
     map = emu.getMap();
     for (Integer integer : map.keySet()) {
       int[] l1 = map.get(integer);
-      System.out.println("il coordinate array for index "+integer+":");
+      print("il coordinate array for index "+integer+":");
       dump(l1);
     }
   }
@@ -517,6 +585,10 @@ public class KnownShiftUtil {
       mps[0] += _r1Min[i];
     if (iu<=mps[0]) return false;
     return true;
+  }
+
+  private static void print(String s) {
+    System.out.println(s);
   }
 
 //  private boolean deleteRow(

@@ -1,5 +1,6 @@
 package warp;
 
+import edu.mines.jtk.dsp.*;
 import edu.mines.jtk.util.*;
 
 import static edu.mines.jtk.util.ArrayMath.*;
@@ -135,19 +136,38 @@ public class WarpUtils {
   }
 
   /**
+   * Computes an array of VpVs ratios an array of shifts u
+   * using a backward difference approximation.
+   * The relationship is defined as vpvs(t) = 1+2*(du/dt)
+   * @param u
+   * @return computed vpvs values.
+   */
+  public static float[] vpvsBd(Sampling su, float[] u) {
+    float dui = 1.0f/(float)su.getDelta();
+    int n = u.length;
+    float[] vpvs = new float[n];
+    vpvs[0] = 1.0f + 2.0f*(u[1]-u[0])*dui; // at i1=0, forward difference
+    for (int i1=1; i1<n; ++i1)
+      vpvs[i1] = 1.0f + 2.0f*(u[i1]-u[i1-1])*dui;
+    return vpvs;
+  }
+
+
+  /**
    * Computes an array of VpVs ratios an array of shifts u. The relationship is
    * defined as vpvs(t) = 1+2*(du/dt).
    * @param u the shifts.
    * @return computed interval Vp/Vs values.
    */
-  public static float[] vpvs(float[] u) {
+  public static float[] vpvs(Sampling su, float[] u) {
+    float dui = 1.0f/(float)su.getDelta();
     int n = u.length;
     int nm1 = n-1;
     float[] vpvs = new float[n];
-    vpvs[ 0 ] = 1.0f + 2.0f*(u[ 1 ]-u[  0  ]); // at i1=0, forward diff
-    vpvs[nm1] = 1.0f + 2.0f*(u[nm1]-u[nm1-1]); // at i1=nm1, backward diff
+    vpvs[ 0 ] = 1.0f + 2.0f*(u[ 1 ]-u[  0  ])*dui; // at i1=0, forward diff
+    vpvs[nm1] = 1.0f + 2.0f*(u[nm1]-u[nm1-1])*dui; // at i1=nm1, backward diff
     for (int i1=1; i1<nm1; i1++)
-      vpvs[i1] = 1.0f + (u[i1+1]-u[i1-1]);
+      vpvs[i1] = 1.0f + (u[i1+1]-u[i1-1])*dui; // 2s cancel
     return vpvs;
   }
 
@@ -157,11 +177,11 @@ public class WarpUtils {
    * @param u the shifts.
    * @return computed interval Vp/Vs values.
    */
-  public static float[][] vpvs(float[][] u) {
+  public static float[][] vpvs(Sampling su, float[][] u) {
     int n2 = u.length;
     float[][] vpvs = new float[n2][];
     for (int i2=0; i2<n2; i2++)
-      vpvs[i2] = vpvs(u[i2]);
+      vpvs[i2] = vpvs(su,u[i2]);
     return vpvs;
   }
 
@@ -171,11 +191,11 @@ public class WarpUtils {
    * @param u the shifts.
    * @return computed interval Vp/Vs values.
    */
-  public static float[][][] vpvs(float[][][] u) {
+  public static float[][][] vpvs(Sampling su, float[][][] u) {
     int n3 = u.length;
     float[][][] vpvs = new float[n3][][];
     for (int i3=0; i3<n3; i3++)
-      vpvs[i3] = vpvs(u[i3]);
+      vpvs[i3] = vpvs(su,u[i3]);
     return vpvs;
   }
 
@@ -194,6 +214,29 @@ public class WarpUtils {
     for (int i1=n1f; i1<n1; i1++)
       ef[i1] = v;
     return ef;
+  }
+
+  public static float[][] applyShifts(
+      Sampling su, final float[][] u,
+      Sampling sg, final float[][] g)
+  {
+    final int n1 = u[0].length;
+    final int n2 = u.length;
+    final int ng = g[0].length;
+    final double dg = sg.getDelta();
+    final double du = su.getDelta();
+    final double fg = sg.getDelta();
+    final double fu = su.getDelta();
+    final float[][] hf = new float[n2][n1];
+    final SincInterp si = new SincInterp();
+    Parallel.loop(n2,new Parallel.LoopInt() {
+    public void compute(int i2) {
+      double v = fu;
+      for (int i1=0; i1<n1; i1++, v=fu+i1*du) {
+        hf[i2][i1] = si.interpolate(ng,dg,fg,g[i2],(float)v+u[i2][i1]);
+      }
+    }});
+    return hf;
   }
 
   /**
