@@ -116,8 +116,8 @@ public class JTestDynamicWarpingC3 extends TestCase {
     double sSMax = sh.getLast()-sg.getLast();
     print("s1Max="+s1Max+", sSMax="+sSMax);
     DynamicWarpingC3 dw = new DynamicWarpingC3(s1Min,s1Max,sSMin,sSMax,s1);
-    Sampling su1 = dw.getShiftSampling1();
-    Sampling suS = dw.getShiftSamplingS();
+    Sampling su1 = dw.getSamplingU1();
+    Sampling suS = dw.getSamplingUS();
     Almost a = new Almost();
 
     double ff = sf.getFirst();
@@ -186,6 +186,7 @@ public class JTestDynamicWarpingC3 extends TestCase {
   }
 
   public void testAccumulateSparse() {
+    // if (true) return;
     print("Testing AccumulateSparse...");
     Sampling se  = new Sampling(101,0.002,0.0);
     Sampling su1 = new Sampling(53,0.002,0.0);
@@ -208,16 +209,48 @@ public class JTestDynamicWarpingC3 extends TestCase {
       int ng = g.length;
       int ngm = ng-1;
       float[][][] d = new float[ng][nu1][nuS];
-      int[][][][] m = new int[ng][nu1][nuS][2];
-      accumulateSparse(1,r1Min,r1Max,rSMin,rSMax,g,de,du1,duS,e,d,m);
-      for (int iu1=0; iu1<nu1; iu1++) {
-        for (int iuS=0; iuS<nuS; iuS++) {
-          assert d[ngm][iu1][iuS]==ne : "iu1="+iu1+", iuS="+iuS+": "+
-            "expected "+ne+" but got "+d[ngm][iu1][iuS];
-        }
-      }
+      accumulateSparse(1,r1Min,r1Max,rSMin,rSMax,g,de,du1,duS,e,d,null);
+      accumulateAssert(nu1,nuS,ne,ngm,d);
+      accumulateSparseP(1,r1Min,r1Max,rSMin,rSMax,g,de,du1,duS,e,d,null);
+      accumulateAssert(nu1,nuS,ne,ngm,d);
     }
   }
+
+  // public void testAccumulateSparseTime() {
+  //   print("Testing AccumulateSparseTime...");
+  //   Sampling se  = new Sampling(101,0.002,0.0);
+  //   Sampling su1 = new Sampling(53,0.002,0.0);
+  //   Sampling suS = new Sampling(22,0.002,0.0);
+  //   int ne  =  se.getCount();
+  //   int nu1 = su1.getCount();
+  //   int nuS = suS.getCount();
+  //   double de  =  se.getDelta();
+  //   double du1 = su1.getDelta();
+  //   double duS = suS.getDelta();
+  //   double[] r1Min = filldouble(-1.0,ne);
+  //   double[] r1Max = filldouble( 1.0,ne);
+  //   double[] rSMin = filldouble(-1.0,ne);
+  //   double[] rSMax = filldouble( 1.0,ne);
+  //   float[][][] e = fillfloat(1.0f,nuS,nu1,ne);
+  //   Stopwatch sw  = new Stopwatch();
+  //   Stopwatch swp = new Stopwatch();
+  //   for (int dg=1; dg<ne; dg++) {
+  //     int[] g = Subsample.subsample(ne,dg);
+  //     int ng = g.length;
+  //     int ngm = ng-1;
+  //     float[][][] d = new float[ng][nu1][nuS];
+  //     sw.start();
+  //     accumulateSparse(1,r1Min,r1Max,rSMin,rSMax,g,de,du1,duS,e,d,null);
+  //     sw.stop();
+  //     // accumulateAssert(nu1,nuS,ne,ngm,d);
+  //     swp.start();
+  //     accumulateSparseP(1,r1Min,r1Max,rSMin,rSMax,g,de,du1,duS,e,d,null);
+  //     swp.stop();
+  //     // accumulateAssert(nu1,nuS,ne,ngm,d);
+  //   }
+  //   print("accumulate serial: "+sw.time()+" seconds");
+  //   print("accumulate parallel: "+swp.time()+" seconds");
+  // }
 
   public void testFindShifts1D() {
     print("Testing findShifts1D...");
@@ -254,8 +287,8 @@ public class JTestDynamicWarpingC3 extends TestCase {
     double sSMax = uSc+2.0*s1.getDelta();
     print("s1Max="+s1Max+", sSMax="+sSMax);
     DynamicWarpingC3 dw = new DynamicWarpingC3(s1Min,s1Max,sSMin,sSMax,s1);
-    Sampling su1 = dw.getShiftSampling1();
-    Sampling suS = dw.getShiftSamplingS();
+    Sampling su1 = dw.getSamplingU1();
+    Sampling suS = dw.getSamplingUS();
     for (int dg=1; dg<n1w; dg++) {
       int[] g1i = Subsample.subsample(n1w,dg);
       int ng = g1i.length;
@@ -277,6 +310,15 @@ public class JTestDynamicWarpingC3 extends TestCase {
 
   ////////////////////////////////////////////////////////////////////////////
   // Private
+
+  private void accumulateAssert(
+      int nu1, int nuS, int ne, int ngm, float[][][] d)
+  {
+    for (int iu1=0; iu1<nu1; iu1++)
+      for (int iuS=0; iuS<nuS; iuS++)
+        assert d[ngm][iu1][iuS]==ne : "iu1="+iu1+", iuS="+iuS+": "+
+          "expected "+ne+" but got "+d[ngm][iu1][iuS];
+  }
 
   private static void print(String s) {
     System.out.println(s);
