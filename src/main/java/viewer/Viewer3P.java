@@ -411,6 +411,83 @@ public class Viewer3P {
     return maps;
   }
 
+  public static Map<Integer,float[][][]>[] getSparseCoordsMap(
+      Sampling s1, float[][][] g1,
+      Sampling s2, float[] g2,
+      Sampling s3, float[] g3)
+  {
+    int ng1 = g1[0][0].length;
+    int ng2 = g2.length;
+    int ng3 = g3.length;
+    @SuppressWarnings("unchecked")
+    Map<Integer,float[][][]>[] maps = new HashMap[3];
+    Map<Integer,float[][][]> i3Map = new HashMap<>();
+    Map<Integer,float[][][]> i2Map = new HashMap<>();
+    Map<Integer,float[][][]> i1Map = new HashMap<>();
+
+    Map<Integer,List<Float>> i12Map = new HashMap<>();
+    Map<Integer,List<Float>> i13Map = new HashMap<>();
+    for (int i3=0; i3<ng3; i3++) {
+      float[][] x211 = new float[ng2][ng1];
+      float[][] x212 = new float[ng2][ng1];
+      int ig3 = s3.indexOfNearest(g3[i3]);
+      for (int i2=0; i2<ng2; i2++) {
+        int ig2 = s2.indexOfNearest(g2[i2]);
+        for (int i1=0; i1<ng1; i1++) {
+          int ig1 = s1.indexOfNearest(g1[ig3][ig2][i1]);
+          if (i12Map.containsKey(ig1)) {
+            i12Map.get(ig1).add(g2[i2]);
+            i13Map.get(ig1).add(g3[i3]);
+          } else {
+            List<Float> l12 = new ArrayList<Float>();
+            l12.add(g2[i2]);
+            i12Map.put(ig1,l12);
+            List<Float> l13 = new ArrayList<Float>();
+            l13.add(g3[i3]);
+            i13Map.put(ig1,l13);
+          }
+          x211[i2][i1] = g1[ig3][ig2][i1];
+          x212[i2][i1] = g2[i2];
+        }
+      }
+      i3Map.put(ig3,new float[][][]{x211,x212});
+    }
+
+    for (int i2=0; i2<ng2; i2++) {
+      float[][] x131 = new float[ng3][ng1];
+      float[][] x132 = new float[ng3][ng1];
+      int ig2 = s2.indexOfNearest(g2[i2]);
+      for (int i3=0; i3<ng3; i3++) {
+        int ig3 = s3.indexOfNearest(g3[i3]);
+        for (int i1=0; i1<ng1; i1++) {
+          x131[i3][i1] = g1[ig3][ig2][i1];
+          x132[i3][i1] = g3[i3];
+        }
+      }
+      i2Map.put(ig2,new float[][][]{x131,x132});
+    }
+
+    Iterator<Integer> it = i12Map.keySet().iterator();
+    while (it.hasNext()) {
+      int i1 = it.next();
+      List<Float> l12 = i12Map.get(i1);
+      List<Float> l13 = i13Map.get(i1);
+      int nl2 = l12.size();
+      int nl3 = l13.size();
+      float[][] x232 = new float[nl3][nl2];
+      float[][] x233 = new float[nl3][nl2];
+      for (int i=0; i<nl3; i++) {
+        x232[i][i] = l12.get(i);
+        x233[i][i] = l13.get(i);
+      }
+      i1Map.put(i1,new float[][][]{x232,x233});
+    }
+    maps[0] = i1Map;
+    maps[1] = i2Map;
+    maps[2] = i3Map;
+    return maps;
+  }
+
   /**
    * Sets the plot title.
    * @param title the title; null for no title.
