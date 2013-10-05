@@ -47,26 +47,26 @@ r3min,r3max,dg3 = -0.15,0.15,15
 #############################################################################
 
 def main(args):
-  # goSagVsReg()
-  goSagFixedU()
+  goSagVsReg()
+  # goSagFixedU()
 
 def goSagVsReg():
-  pp,ppw,ps1,dw = getPpPs1Data()
+  pp,ps1,dw = getPpPs1Data()
   # Warping using a structure aligned grid.
   # dg1=50, ng=13 - choose 13 strongest reflectors, that must be a minimum of
   # 50 samples apart. The first and last time samples are 2 of the 13 layers.
   # Fasle to read shifts from disk, True to find shifts.
-  us = goShiftsSAG(pp,ppw,ps1,dw,50,13,False)
+  us = goShiftsSAG(s1,pp,s1ps,ps1,dw,50,13,False)
 
   # Warping using a regular grid.
   # dg1=80 - use a grid with layers spaced at a minimum of 80 samples apart,
   # including the first and last time samples. This is not optimal, but is
   # simple. The structure aligned grid should be more accurate.
   # Fasle to read shifts from disk, True to find shifts.
-  ur = goShiftsREG(pp,ppw,ps1,dw,80,False)
+  ur = goShiftsREG(s1,pp,s1ps,ps1,dw,80,False)
 
-  uA = [[mul(us[k3],d1),"us","w-",2.0],[mul(ur[k3],d1),"ur","w--",2.0]]
-  plotErrors(ppw,ps1,dw,uA," REG vs SAG") # Compare time shifts on error plot
+  # uA = [[mul(us[k3],d1),"us","w-",2.0],[mul(ur[k3],d1),"ur","w--",2.0]]
+  # plotErrors(ppw,ps1,dw,uA," REG vs SAG") # Compare time shifts on error plot
 
 def goSagFixedU():
   pp,ppw,ps1,dw = getPpPs1Data()
@@ -79,14 +79,10 @@ def goSagFixedU():
 def getPpPs1Data():
   # pp,ps1 = getImages3D() # FKK and AGC
   pp,ps1 = getImages3DSmooth() # FKK, AGC, and Structure Oriented Smoothing
-  lMax = DynamicWarpingC.computeMaxLag(n1ps,vpvsAvg)
-  n1w = DynamicWarpingC.computeMaxLength(n1,n1ps,vpvsAvg)
-  ppw = copy(n1w,n2,n3,pp)
-  dw = DynamicWarpingC(0,lMax) # DynamicWarpingC.java
-  nl = dw.getNumberOfLags()
-  dw.setStrainLimits(r1min,r1max,r2min,r2max,r3min,r3max)
-  setPlotVars(n1w,nl)
-  return pp,ppw,ps1,dw
+  dw = DynamicWarpingC.fromVpVs(s1,s1ps,vpvsAvg,0.0,s2,s3)
+  dw.setStrainLimits(r1min,r1max,r2min,r2max)
+  setPlotVars(dw)
+  return pp,ps1,dw
 
 def getImages3D():
   pp = getGbcImage(baseDir,"pp")
@@ -120,70 +116,55 @@ def printConstraints(desc,dg1):
                                                      dg3,k3min,k3max)
   print info
 
-def goShiftsREG(pp,ppw,ps1,dw,dg1,find):
+def goShiftsREG(sf,f,sg,g,dw,dg1,find):
   desc = " regular grid"
   label = "reg"
   printConstraints(desc,dg1)
-  g1 = zeroint(ne1,n2,n3)
   g11 = Subsample.subsample(ne1,dg1) # simple regular interval grid
-  g2 = Subsample.subsample(n2,dg2) # simple regular interval grid
-  g3 = Subsample.subsample(n3,dg3) # simple regular interval grid
+  ng1 = len(g11)
+  g11f = zerofloat(ng1)
+  for i1 in range(ng1):
+    g11f[i1] = se.getValue(g11[i1])
+  g1 = zerofloat(ne1,n2,n3)
   for i3 in range(n3):
     for i2 in range(n2):
-      g1[i3][i2] = copy(g11) # use the same grid g11 for all traces
-  print "g1:"; dump(g11)
+      g1[i3][i2] = copy(g11f) # use the same grid g11 for all traces
+  g2 = getG2(dg2)
+  g3 = getG3(dg3)
+  print "g1:"; dump(g1[0][0])
   print "g2:"; dump(g2)
   print "g3:"; dump(g3)
-  if find:
-    # Computes time shifts u with values only at g1, g2, and g3 coordinates and
-    # interpolate to get time shifts everywhere. Use Interp.MONOTONIC for
-    # smoother shifts, but Interp.LINEAR is really the answer most consistent
-    # with the method of finding time shifts. With MONOTONIC the min/max Vp/Vs
-    # constraints may be violated. Interp.LINEAR for 2nd/3rd dimension should
-    # not be changed.
-    u = dw.findShifts(ppw,ps1,toFloats(g1),g2,g3,Interp.MONOTONIC,Interp.LINEAR)
-    writeImage(threeDDir,"u_"+label,u)
-  u = readImage(threeDDir,"u_"+label,ne1,n2,n3)
-  checkShifts3(u)
-  coordMap = Viewer3P.getSparseCoordsMap(g1,g2,g3,d1,d2,d3)
-  plotGrid(pp,coordMap,desc)
-  plotShifts(pp,u,desc)
-  plotVpvs(pp,u,desc)
-  plotWarped(pp,ps1,dw,u,desc)
-  return u
-    
-def goShiftsSAG(pp,ppw,ps1,dw,dg1,ng,find):
+  return goShifts(sf,f,sg,g,g1,g2,g3,dw,desc,label,find)
+
+def goShiftsSAG(sf,f,sg,g,dw,dg1,ng,find):
   desc = " structure aligned grid"
   label = "sag"
   printConstraints(desc,dg1)
   # Can do flattening separately, comment these steps out, and read the results
   # from disk.
-  # goSlopes(pp,dw) # compute slopes for flattening
-  # goFlat(pp,dw) # flatten
+  # goSlopes(f,dw) # compute slopes for flattening
+  # goFlat(f,dw) # flatten
   x1m = readImage(threeDDir,"x1",ne1,n2,n3) # flattening mappings
   ff = readImage(threeDDir,"ff",ne1,n2,n3) # flattened image
   g1,g1Flat = makeAutomaticGrid(x1m,ff,dw,dg1,ng) # structure aligned grid
-  g2 = Subsample.subsample(n2,dg2) # simple regular interval grid
-  g3 = Subsample.subsample(n3,dg3) # simple regular interval grid
+  g1 = getG1Floats(x1m,g1Flat,sf.getDelta())
+  g2 = getG2(dg2)
+  g3 = getG3(dg3)
   print "g2:"; dump(g2)
   print "g3:"; dump(g3)
+  return goShifts(sf,f,sg,g,g1,g2,g3,dw,desc,label,find)
+
+def goShifts(sf,f,sg,g,g1,g2,g3,dw,desc,label,find):
   if find:
-    # Computes time shifts u with values only at g1, g2, and g3 coordinates and
-    # interpolate to get time shifts everywhere. Use Interp.MONOTONIC for
-    # smoother shifts, but Interp.LINEAR is really the answer most consistent
-    # with the method of finding time shifts. With MONOTONIC the min/max Vp/Vs
-    # constraints may be violated. Interp.LINEAR for 2nd/3rd dimension should
-    # not be changed.
-    u = dw.findShifts(ppw,ps1,getG1Floats(x1m,g1Flat),g2,g3,Interp.MONOTONIC,
-                      Interp.LINEAR)
+    u = dw.findShifts(sf,f,sg,g,g1,g2,g3)
     writeImage(threeDDir,"u_"+label,u)
-  u = readImage(threeDDir,"u_"+label,ne1,n2,n3)
+  u = readImage(threeDDir,"u_"+label,n1,n2,n3)
   checkShifts3(u)
-  coordMap = Viewer3P.getSparseCoordsMap(g1,g2,g3,d1,d2,d3)
-  plotGrid(pp,coordMap,desc)
-  plotShifts(pp,u,desc)
-  plotVpvs(pp,u,desc)
-  plotWarped(pp,ps1,dw,u,desc)
+  coordMap = Viewer3P.getSparseCoordsMap(s1,g1,s2,g2,s3,g3)
+  plotGrid(f,coordMap,desc)
+  plotWarped(sf,f,sg,g,u,desc)
+  plotVpvs(f,u,desc)
+  plotShifts(f,u,desc)
   return u
 
 def goShiftsSAGFixedU(pp,ppw,ps1,dw,dg1,ng,find):
@@ -291,14 +272,30 @@ def makeAutomaticGrid(x1m,ff,dw,dg1,ng):
   print "g1Flat:"; dump(g1Flat)
   return g1,g1Flat
 
-def getG1Floats(x1m,g1Flat):
+def getG1Floats(x1m,g1Flat,d1):
   ng = len(g1Flat)
   g1 = zerofloat(ng,n2,n3)
   for i3 in range(n3):
     for i2 in range(n2):
       for i1 in range(ng):
-        g1[i3][i2][i1] = x1m[i3][i2][g1Flat[i1]]
+        g1[i3][i2][i1] = x1m[i3][i2][g1Flat[i1]]*d1
   return g1
+
+def getG2(dg2):
+  g2 = Subsample.subsample(n2,dg2); # simple regular interval grid
+  ng2 = len(g2)  
+  g2f = zerofloat(ng2)
+  for i2 in range(ng2):
+    g2f[i2] = s2.getValue(g2[i2])
+  return g2f
+
+def getG3(dg3):
+  g3 = Subsample.subsample(n3,dg3); # simple regular interval grid
+  ng3 = len(g3)  
+  g3f = zerofloat(ng3)
+  for i3 in range(ng3):
+    g3f[i3] = s3.getValue(g3[i3])
+  return g3f
 
 def toFloats(f):
   n3 = len(f)
@@ -384,12 +381,11 @@ def goFlat(f,dw):
 
 #############################################################################
 
-def setPlotVars(n1,nl):
+def setPlotVars(dw):
   global ne1,nel,se,su,el,ul,xl,yl
-  ne1 = n1
-  nel = nl
-  se = Sampling(ne1,d1,f1) # error sampling
-  su = Sampling(nel,d1,f1) # shift sampling
+  se = dw.getSampling1() # error sampling
+  su = dw.getSamplingU() # shift sampling
+  ne1 = se.getCount()
   el = [se.getFirst(),se.getLast()] # error limits for plotting
   ul = [su.getFirst(),su.getLast()] # shift limits for plotting 
   xl = [s2.getFirst(),s2.getLast()] # trace limits for plotting
@@ -403,21 +399,18 @@ def plotGrid(pp,coordMap,desc):
           label1="PP time (s)",vInterval1=0.2,cmap1=iMap,cbw=100,slices=slices,
           limits1=el,limits2=xl,limits3=yl,he0=he0)
 
-def plotShifts(pp,u,desc):
+def plotShifts(f,u,desc):
   # Plot 2D shifts
-  us = mul(u,d1)
-  zm = ZeroMask(pp)
-  us = DynamicWarpingC.extrapolate(len(pp[0][0]),us)
-  zm.apply(0.00,us)
-  plotPP3(us,title="Vertical shifts"+desc,s1=s1,s2=s2,s3=s3,clips1=uClips,
+  zm = ZeroMask(f)
+  zm.apply(0.00,copy(u))
+  plotPP3(u,title="Vertical shifts"+desc,s1=s1,s2=s2,s3=s3,clips1=uClips,
           label1="PS time (s)",cbar="Vertical shift (s)",cmap1=jet,cbw=100,
           limits1=el,slices=slices,he0=he0)
 
-def plotVpvs(pp,u,desc,coordMap=None):
+def plotVpvs(f,u,desc,coordMap=None):
   # Plot Vp/Vs ratios
-  zm = ZeroMask(pp)
-  vpvs = DynamicWarpingC.vpvs(u)
-  vpvs = DynamicWarpingC.extrapolate(len(pp[0][0]),vpvs)
+  zm = ZeroMask(f)
+  vpvs = WarpUtils.vpvs(su,u)
   print "vpvs: min=%g, max=%g"%(min(vpvs),max(vpvs))
   zm.apply(0.00,vpvs)
   cm = None
@@ -427,15 +420,15 @@ def plotVpvs(pp,u,desc,coordMap=None):
           clips1=vClips,label1="PP time (s)",cbar="Vp/Vs ratio",cmap1=jet,
           cbw=100,limits1=el,limits2=xl,limits3=yl,slices=slices,he0=he0)
 
-def plotWarped(pp,ps1,dw,u,desc):
+def plotWarped(sf,f,sg,g,u,desc):
   # Plot Warped PS1 image and the difference between the warped and input.
-  psw = dw.applyShifts(n1,ps1,u)
-  plotPP3(psw,title="PS1 warped"+desc,s1=s1,s2=s2,s3=s3,clips1=iClips,
+  h = WarpUtils.applyShifts(sf,u,sg,g)
+  plotPP3(h,title="PS1 warped"+desc,s1=s1,s2=s2,s3=s3,clips1=iClips,
           cmap1=iMap,label1="PP time (s)",cbw=100,limits1=el,slices=slices,
           he0=he0)
-  nrms = DynamicWarpingC.computeNrms(ne1,pp,psw)
+  nrms = WarpUtils.computeNrms(ne1,f,h)
   print desc+": nrms=%g"%nrms
-  # d = sub(psw,pp)
+  # d = sub(h,f)
   # plotPP3(d,title="PP-PS1 warped"+desc,s1=s1,s2=s2,s3=s3,clips1=iClips,
   #         cmap1=iMap,label1="PP time (s)",cbw=100,limits1=el,slices=slices)
 

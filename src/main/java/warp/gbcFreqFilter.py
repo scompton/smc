@@ -5,7 +5,7 @@ from gbcUtils import *
 
 #############################################################################
 s1,s2,s3 = getSamplings()
-
+baseDir = getBaseDir()
 iClips=[-1.0,1.0]
 mClips=[0.0,1.0]
 # klower,kupper,kwidth,aerror = 0.0,0.16,0.1,0.01
@@ -14,9 +14,10 @@ klower,kupper,kwidth,aerror = 0.0,0.06,0.05,0.01
 #############################################################################
 
 def main(args):
-  goFilter("ps1",i3=72)
-  # goFilter("ps2",i3=72)
-  # goFilter("ps1")
+  # goFilterDesign("ps1",i3=72)
+  # goFilterDesign("ps2",i3=72)
+  goFilter("ps2",0.2)
+  # goFilterDesign("ps1")
   # viewFkk()
 
 def viewFkk():
@@ -37,17 +38,36 @@ def viewFkk():
   go3dAmpSpec(ps1fkk,"PS1 fkk aggressive")
   go3dAmpSpec(ps1fkk2,"PS1 fkk")
 
-def goFilter(name,i3=None):
+def goFilterDesign(name,i3=None):
   f = getGbcImage(baseDir,name)
   if i3:
     f = f[i3]
     zm = ZeroMask(f)
     fk = FK(s1,s2,f)
     fk.setZeroMask(zm)
+    fk.designFilter()
   else:
     zm = ZeroMask(f)
     fkk = FKK(s1,s2,s3,f)
     fkk.setZeroMask(zm)
+
+def goFilter(name,m):
+  f = getGbcImage(baseDir,name)
+  n1,n2,n3 = len(f[0][0]),len(f[0]),len(f)
+  g = zerofloat(n1,n2,n3)
+  for i3 in range(len(f)):
+    fi3 = f[i3]
+    zm = ZeroMask(fi3)
+    fk = FK(s1,s2,fi3)
+    fk.setZeroMask(zm)
+    g[i3] = fk.inverse(fk.filter(m))
+  plotPP3(f,s1=s1,s2=s2,s3=s3,title="Input",label1="Time (s)",
+          label2="Crossline (km)",label3="Inline (km)",cbar="Amplitude",
+          clips1=iClips,width=900,height=1000,cbw=100,he0=320)
+  plotPP3(g,s1=s1,s2=s2,s3=s3,title="Filtered",label1="Time (s)",
+          label2="Crossline (km)",label3="Inline (km)",cbar="Amplitude",
+          clips1=iClips,width=900,height=1000,cbw=100,he0=320)
+  writeImage(baseDir,name+"_fk",g)
 
 def go3DPP():
   pp,zmpp,ps1,zmps1 = getGbcImages(baseDir)

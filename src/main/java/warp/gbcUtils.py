@@ -67,7 +67,7 @@ def makeSubset(datDir,filename,n1s,n1e,n2s,n2e,n3s,n3e):
 
 ###############################################################################
 # Utility functions
-  
+
 def gain(hw,f):
   """ normalize RMS amplitude within overlapping windows, half-width hw """
   g = mul(f,f)
@@ -93,6 +93,40 @@ def toFloats3(f):
       for i1 in range(n1):
         ff[i3][i2][i1] = float(f[i3][i2][i1])
   return ff
+
+def stretch3(c,f):
+  """ stretch (supersample) by specified factor c time sampling of image f """
+  si = SincInterp()
+  n1,n2,n3 = len(f[0][0]),len(f[0]),len(f)
+  ci = 1.0/c
+  g = zerofloat(n1)
+  for i3 in range(n3):
+    for i2 in range(n2):
+      stretch(si,n1,f[i3][i2],ci,g)
+
+def stretch2(c,f):
+  """ stretch (supersample) by specified factor c time sampling of image f """
+  si = SincInterp()
+  n1,n2 = len(f[0]),len(f)
+  ci = 1.0/c
+  g = zerofloat(n1)
+  for i2 in range(n2):
+    stretch(si,n1,f[i2],ci,g)
+
+def stretch1(c,f):
+  """ stretch (supersample) by specified factor c time sampling of image f """
+  si = SincInterp()
+  n1 = len(f)
+  g = zerofloat(n1)
+  stretch(si,n1,f,1.0/c,g)
+
+def stretch(si,n1,f,ci,g):
+  si.interpolate(n1,1.0,0.0,f,n1,ci,0.0,g)
+  copy(g,f)
+
+def checkShifts(u):
+  if not isMonotonic(u):
+    print "Interpolated shifts are not monotonic!"
 
 def checkShifts2(u):
   n2 = len(u)
@@ -132,28 +166,33 @@ x1down_x2right = PlotPanel.Orientation.X1DOWN_X2RIGHT
 nearest = Interpolation.NEAREST
 linear = Interpolation.LINEAR
 
-def plot1(f,g=None,h=None,lineWidth=None,x1x2=None,s=None,title=None,
-          hLabel=None,vLabel=None,o=x1right_x2up,hLimits=None,vLimits=None,
-          vFormat=None,hFormat=None,hInterval=None,vInterval=None,width=None,
-          height=None,pngDir=None,png1=None,png2=None,pngS=None,ptw=None,fw=1.0,
-          fh=1.0):
+def displayGBC(ppName="pp",ps1Name="ps1",ps2Name="ps2"):
+  pp = getGbcImage( baseDir, ppName)
+  ps1 = getGbcImage(baseDir,ps1Name)
+  ps2 = getGbcImage(baseDir,ps2Name)
+  he0 = 320
+  lc = Color.YELLOW
+  plotPP3(pp,title=ppName,s1=s1,s2=s2,s3=s3,label1="PP time (s)",he0=he0,
+          lineColor=lc)
+  plotPP3(ps1,title=ps1Name,s1=s1,s2=s2,s3=s3,label1="PS1 time (s)",he0=he0,
+          lineColor=lc)
+  plotPP3(ps2,title=ps2Name,s1=s1,s2=s2,s3=s3,label1="PS2 time (s)",he0=he0,
+          lineColor=lc)
+
+def plot1(fsA,s,x1x2=None,title=None,hLabel=None,vLabel=None,
+          o=x1right_x2up,hLimits=None,vLimits=None,vFormat=None,hFormat=None,
+          hInterval=None,vInterval=None,width=None,height=None,pngDir=None,
+          png1=None,png2=None,pngS=None,ptw=None,fw=1.0,fh=1.0):
   if o==x1right_x2up:
     sp = SimplePlot()
   else:
     sp = SimplePlot(SimplePlot.Origin.UPPER_LEFT)
   if not s:
     s = Sampling(len(f))
-  pv1 = sp.addPoints(s,f)
-  if lineWidth:
-    pv1.setLineWidth(lineWidth)
-  if g:
-    pv2 = sp.addPoints(s,g[0])
-    pv2.setStyle(g[1])
-    pv2.setLineWidth(g[2])
-  if h:
-    pv3 = sp.addPoints(s,h[0])
-    pv3.setStyle(h[1])
-    pv3.setLineWidth(h[2])
+  for i in range(len(fsA)):
+    fs = fsA[i]
+    pv = sp.addPoints(s,fs[0])
+    pv.setStyle(fs[1])
   if x1x2:
     pv12 = sp.addPoints(x1x2[0],x1x2[1])
     pv12.setStyle(x1x2[2])
@@ -191,7 +230,7 @@ def plot1(f,g=None,h=None,lineWidth=None,x1x2=None,s=None,title=None,
   if pngDir and pngS:
     sp.setFontSizeForSlide(fw,fh)
     sp.paintToPng(720.0,3.33,pngDir+pngS+".png")
-    
+
 def plot2(f,g=None,pA=None,x12SingleA=None,x12=None,x22=None,
           x12a=None,x12b=None,s1=None,s2=None,title=None,
           hLabel="Crossline (km)",vLabel="",cbar="Amplitude",cbw=None,
@@ -384,7 +423,7 @@ def plot3(f,g=None,pA=None,x12SliceA=None,x13=None,x23=None,
   if vLimits:
     v.setVLimits(vLimits[0],vLimits[1])
   v.show()
-  
+
 def plotPP3(f,g=None,x1x2=None,s1=None,s2=None,s3=None,title="",label1="",
             label2="Crossline (km)",label3="Inline (km)",cbar="Amplitude",
             cmap1=None,cmap2=None,clips1=None,clips2=None,width=900,height=1000,
@@ -441,7 +480,7 @@ def plotPP3(f,g=None,x1x2=None,s1=None,s2=None,s3=None,title="",label1="",
   if cmap2:
     v.setColorModel2(cmap2)
   if lineColor:
-    v.setLineColor(lineColor)  
+    v.setLineColor(lineColor)
   if width and height:
     v.setSize(width,height)
   if limits1:
@@ -513,4 +552,4 @@ class _RunMain(Runnable):
   def run(self):
     self.main(sys.argv)
 def run(main):
-  SwingUtilities.invokeLater(_RunMain(main)) 
+  SwingUtilities.invokeLater(_RunMain(main))

@@ -55,7 +55,7 @@ def goSagVsReg():
   # Warping using a structure aligned grid.
   # dg1=50, ng=13 - choose 13 strongest reflectors, that must be a minimum of
   # 50 samples apart. The first and last time samples are 2 of the 13 layers.
-  us = goShiftsSAG(s1pp,pp,s1ps,ps1,dw,50,13,"PP","PS1")
+  # us = goShiftsSAG(s1pp,pp,s1ps,ps1,dw,50,13,"PP","PS1")
 
   # Warping using a regular grid.
   # dg1=80 - use a grid with layers spaced at a minimum of 80 samples apart,
@@ -170,7 +170,7 @@ def goShifts(sf,f,sg,g,g1,g2,dw,fname,gname,desc):
   plotErrors(sf,f,sg,g,dw,uA,desc,fname,x12SliceA=x12SliceA)
   x1i,x2i = getSparseGridCoords(g1,g2)
   plotGrid(f,x1i,x2i,fname)
-  plotWarped(sf,f,sg,g,dw,u,desc,fname,gname)
+  plotWarped(sf,f,sg,g,u,desc,fname,gname)
   plotVpvs(f,u,desc,fname)
   plotShifts(f,u,desc,fname)
   return u
@@ -238,13 +238,13 @@ def goShiftsSAGFixedU(f,g,dw,dg1,ng,fname,gname):
   plotGrid(f,x1i,x2i,fname)
   plotShifts(f,u,desc,fname)
   plotVpvs(f,u,desc,fname)
-  plotWarped(f,g,dw,u,desc,fname,gname)
+  plotWarped(f,g,u,desc,fname,gname)
   desc = " SAG KS"
   x1i,x2i = getSparseGridCoords(g1,g2)
   plotGrid(f,x1i,x2i,fname)
   plotShifts(f,u,desc,fname)
   plotVpvs(f,u,desc,fname)
-  plotWarped(f,g,dw,u,desc,fname,gname)
+  plotWarped(f,g,u,desc,fname,gname)
   return u
 
 def test1DKS(ppw,ps1,dw,g1,p1s1tA,su,se,s2):
@@ -541,7 +541,7 @@ def plotVpvs(f,u,desc,fname):
         cbar="Vp/Vs ratio",clips1=iClips,cmap2=jet,clips2=vClips,hLimits=xl,
         vLimits=el,cmap1=iMap,cbw=100)
 
-def plotWarped(sf,f,sg,g,dw,u,desc,fname,gname):
+def plotWarped(sf,f,sg,g,u,desc,fname,gname):
   # Plot Warped g image and the difference between the warped and input.
   h = WarpUtils.applyShifts(sf,u,sg,g)
   plot2(h,title=gname+" warped"+desc,s1=s1,s2=s2,vLabel=fname+" time (s)",

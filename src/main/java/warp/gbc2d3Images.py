@@ -14,7 +14,7 @@ n3 = s3.getCount() # n3 is the slowest
 
 # subset for PS data
 n1ps = 1501
-s1ps = Sampling(n1ps,s1pp.getDelta(),s1pp.getFirst())
+s1ps = Sampling(n1ps,d1,f1)
 
 # default clips for seismic images(i), time shifts(u), interval vp/vp(v)
 iClips = [-1.5,1.5]
@@ -36,10 +36,6 @@ vpvsMin,vpvsMax = 1.5,2.5
 r1min = (vpvsMin-1.0)/2
 r1max = (vpvsMax-1.0)/2
 
-# Constraints for horizontal direction. A better match between the PS and PP
-# images can be achieved by loosening these constraints, but I'm not sure that
-# we want to correct for all lateral variations seen in the PS image but not
-# in the PP image. These differences may not be related to Vp/Vs ratios.
 r2min,r2max,dg2 = -0.10,0.10,25
 
 ppHorizons = [
@@ -53,9 +49,9 @@ ppHorizons = [
   # "f_pp_time",
   "l_pp_time",
   "g_pp_time",
-  "h_pp_time",
-  # "i_pp_time"
-  # "j_pp_time",
+  # "h_pp_time",
+  "i_pp_time",
+  "j_pp_time",
   # "k_pp_time"
 ]
 
@@ -68,180 +64,225 @@ ps1Horizons = [
   "f_ps1_time",
   "g_ps1_time",
   "h_ps1_time",
-  # "i_ps1_time"
+  "i_ps1_time"
 ]
 sigma = 8.0 # sigma for smoothing horizons
 
 #############################################################################
 
 def main(args):
-  goPpPs1()
-  # goPpPs2()
+  goPpPs1(True)
+  goPpPs1(False)
+  # goPpPs2(True)
+  # goPpPs2(False)
   # goPs1Ps2()
+  # go3Images()
 
-def goPpPs1():
-  pp,ps1 = getPp(i3),getPs1(i3)
-  # plot2(ps1,title="PS1",s1=s1ps,s2=s2,clips1=iClips,vLabel="PS time (s)",
-  #       vInterval=0.2,cmap1=iMap,cbw=100)
-  lMax = DynamicWarpingC.computeMaxLag(n1ps,vpvsAvg)
-  n1w = DynamicWarpingC.computeMaxLength(n1pp,n1ps,vpvsAvg)
-  ppw = copy(n1w,n2,pp)
-  dw = DynamicWarpingC(0,lMax) # DynamicWarpingC.java
-  nl = dw.getNumberOfLags()
-  dw.setStrainLimits(r1min,r1max,r2min,r2max)
-  setPlotVars(n1w,nl,n1pp,s1pp)
-  # us = goShiftsSAG(pp,ppw,ps1,dw,50,13,"PP","PS1")
-  uh = goShiftsHOR(pp,ppw,ps1,dw,ppHorizons,"PP","PS1")
+def goPpPs1(tbt):
+  fname = "PP"
+  gname = "PS1"
+  f,sf = getPp(i3)
+  g,sg = getPs1(i3)
+  if tbt:
+    dw = DynamicWarpingC.fromVpVs(sf,sg,vpvsAvg,0.0,s2)
+    dw.setStrainLimits(r1min,r1max,r2min,r2max)
+    goTraceByTrace(sf,f,sg,g,dw,ppHorizons,fname,gname)
+  else:
+    goResidual(sf,f,sg,g,80,ppHorizons,fname,gname)
 
-def goPpPs2():
-  pp,ps2 = getPp(i3),getPs2(i3)
-  lMax = DynamicWarpingC.computeMaxLag(n1ps,vpvsAvg)
-  n1w = DynamicWarpingC.computeMaxLength(n1pp,n1ps,vpvsAvg)
-  ppw = copy(n1w,n2,pp)
-  dw = DynamicWarpingC(0,lMax) # DynamicWarpingC.java
-  nl = dw.getNumberOfLags()
-  dw.setStrainLimits(r1min,r1max,r2min,r2max)
-  setPlotVars(n1w,nl,n1pp,s1pp)
-  # us = goShiftsSAG(pp,ppw,ps2,dw,50,13,"PP","PS2")
-  uh = goShiftsHOR(pp,ppw,ps2,dw,ppHorizons,"PP","PS2")
-  
+def goPpPs2(tbt):
+  fname = "PP"
+  gname = "PS2"
+  f,sf = getPp(i3)
+  g,sg = getPs2(i3)
+  if tbt:
+    dw = DynamicWarpingC.fromVpVs(sf,sg,vpvsAvg,0.0,s2)
+    dw.setStrainLimits(r1min,r1max,r2min,r2max)
+    goTraceByTrace(sf,f,sg,g,dw,ppHorizons,fname,gname)
+  else:
+    goResidual(sf,f,sg,g,150,ppHorizons,fname,gname)
+
 def goPs1Ps2():
-  ps1,ps2 = getPs1(i3),getPs2(i3)
-  plot2(ps1,title="PS1",s1=s1ps,s2=s2,clips1=iClips,vLabel="PS1 time (s)",
-        vInterval=0.2,cmap1=iMap,cbw=100)
-  plot2(ps2,title="PS2",s1=s1ps,s2=s2,clips1=iClips,vLabel="PS2 time (s)",
-        vInterval=0.2,cmap1=iMap,cbw=100)
-  lMax = DynamicWarpingC.computeMaxLag(n1ps,1.1)
-  n1w = DynamicWarpingC.computeMaxLength(n1ps,n1ps,1.1)
-  ps1w = copy(n1w,n2,ps1)
-  dw = DynamicWarpingC(0,lMax) # DynamicWarpingC.java
-  nl = dw.getNumberOfLags()
-  dw.setStrainLimits(0.0,0.4,r2min,r2max)
-  setPlotVars(n1w,nl,n1ps,s1ps)
-  # us = goShiftsSAG(ps1,ps1w,ps2,dw,50,13,"PS1","PS2")
-  uh = goShiftsHOR(ps1,ps1w,ps2,dw,ps1Horizons,"PS1","PS2")
+  fname = "PS1"
+  gname = "PS2"
+  f,sf = getPs1(i3)
+  g,sg = getPs2(i3)
+  dw = DynamicWarpingC(0.0,0.05,sg)
+  dw.setStrainLimits(0.0,0.08,r2min,r2max)
+  goTraceByTrace(sf,f,sg,g,dw,ppHorizons,fname,gname)
+
+def go3Images():
+  fname = "PP"
+  gname = "PS1"
+  hname = "PS2"
+  f,sf = getPp(i3)
+  g,sg = getPs1(i3)
+  h,sh = getPs2(i3)
+  dwa = DynamicWarpingC3.fromVpVs(sf,sg,vpvsAvg-0.1,vpvsAvg+0.1,vpvsAvg,
+                                  0.0,0.0,0.03)
+  dwa.setInterpolationMethod(Method.LINEAR)
+  c = dwa.getCompression()
+  rmin = WarpUtils.getSlope(vpvsMin,c)
+  rmax = WarpUtils.getSlope(vpvsMax,c)
+  dwa.setStrainLimits(rmin,rmax,0.0,0.2)
+  g1 = getG1Envelope(sf,f,100,dwa)
+  sw = Stopwatch()
+  sw.restart()
+  e = dwa.computeErrorsSum(sf,f,sg,g,sh,h)
+  print "Computed errors in %g"%sw.time()
+  sw.restart()
+  ua1,uaS = dwa.findShifts(sf,sg,e,g1)
+  print "Computed average shifts in %g"%sw.time()
+  n1 = len(ua1)
+  ua12 = zerofloat(n1,n2)
+  uaS2 = zerofloat(n1,n2)
+  for i2 in range(n2):
+    ua12[i2] = copy(ua1)
+  for i2 in range(n2):
+    uaS2[i2] = copy(uaS)
+
+  # Plot average results
+  setLimits(dwa.getSampling1,dwa.getSamplingU1)
+  sgc = getCompressedSampling(sg,c)
+  shc = getCompressedSampling(sh,c)
+  wa1 = WarpUtils.applyShifts(sf,ua12,sgc,g)
+  waS = WarpUtils.applyShifts(sf,uaS2,shc,h)
+  plotWarped(sf,f,wa1,fname,gname+" average")
+  plotWarped(sf,f,waS,fname,hname+" average")
+  plotVpvs(sf,f,ua12,c,fname)
+
+def goTraceByTrace(sf,f,sg,g,dw,horizons,fname,gname):
+  g1 = getG1Horizons(horizons,dw)
+  g2 = getG2(dg2)
+  u = getShifts(sf,f,sg,g,dw,g1,g2)
+  checkShifts2(u)
+
+  # Plot results
+  setLimits(dw.getSampling1,dw.getSamplingU)
+  w = WarpUtils.applyShifts(sf,u,sg,g)
+  x1i,x2i = getSparseGridCoords(g1,s2,g2)
+  x1u,x2u = getShiftCoords(se,g1,s2,g2,u)
+  x12SliceA = [[x1u,x2u,"coarse grid","rO",10.0]]
+  uA = [[copy(se.getCount(),n2,u),"u","w-",2.0]]
+  plotErrors(sf,f,sg,g,dw,uA,fname,x12SliceA=x12SliceA)
+  plotGrid(sf,f,x1i,x2i,fname)
+  plotWarped(sf,f,w,fname,gname)
+  plotVpvs(sf,f,u,1.0,fname)
+  plotShifts(sf,f,u,fname)
+
+def goResidual(sf,f,sg,g,dg1,horizons,fname,gname):
+  # Initial compression of PS1, then find average shifts
+  dwa = DynamicWarpingC.fromVpVs(sf,sg,vpvsAvg-0.1,vpvsAvg+0.1,vpvsAvg,0.0)
+  dwa.setInterpolationMethod(Method.LINEAR)
+  c = dwa.getCompression()
+  rmin = WarpUtils.getSlope(vpvsMin,c)
+  rmax = WarpUtils.getSlope(vpvsMax,c)
+  dwa.setStrainLimits(rmin,rmax)
+  # g1 = getG1Regular(sf,200,dwa)
+  g1 = getG1Envelope(sf,f,dg1,dwa)
+  ua,e = getShiftsAvg(sf,f,sg,g,dwa,g1)
+
+  # Plot average results
+  setLimits(dwa.getSampling1,dwa.getSamplingU)
+  sgc = getCompressedSampling(sg,c)
+  wa = WarpUtils.applyShifts(sf,ua,sgc,g)
+  x1u,x2u = getShiftCoords1(se,g1,ua[0])
+  x12SingleA = [[x1u,x2u,"coarse grid","rO",10.0]]
+  uA = [[copy(se.getCount(),ua[0]),"ua","w-",2.0]]
+  plotErrorsAvg(e,dwa,uA,fname,x12SingleA=x12SingleA)
+  plotWarped(sf,f,wa,fname,gname+" average")
+  plotVpvs(sf,f,ua,c,fname)
+
+  # Find residual shifts
+  dw = DynamicWarpingC(-0.05,0.05,dwa.getSampling1(),s2)
+  dw.setInterpolationMethod(Method.LINEAR)
+  r2min,r2max,dg2 = -0.10,0.10,25
+  dw.setStrainLimits(rmin,rmax,r2min,r2max)
+  g1 = getG1Horizons(horizons,dw)
+  g2 = getG2(dg2)
+  ur = getShifts(sf,f,sf,wa,dw,g1,g2)
+
+  # Plot residual results
+  setLimits(dw.getSampling1,dw.getSamplingU)
+  w = WarpUtils.applyShifts(sf,ur,sf,wa)
+  x1i,x2i = getSparseGridCoords(g1,s2,g2)
+  x1u,x2u = getShiftCoords(se,g1,s2,g2,ur)
+  x12SliceA = [[x1u,x2u,"coarse grid","rO",10.0]]
+  uA = [[copy(se.getCount(),n2,ur),"ur","w-",2.0]]
+  plotErrors(sf,f,sf,wa,dw,uA,fname,x12SliceA=x12SliceA)
+  plotGrid(sf,f,x1i,x2i,fname)
+  plotWarped(sf,f,w,fname,gname)
+  uc = WarpUtils.compositeShifts(sf,ua,ur)
+  plotVpvs(sf,f,uc,c,fname)
+  fsA = [[ua[72],"r-"],[ur[72],"b-"],[uc[72],"k-"]]
+  plot1(fsA,sf,title="Shifts",hLabel="Time shift (s)",vLabel=fname+" time (s)",
+        width=400,height=800,o=x1down_x2right)
 
 def getPp(i3):
   pp = getGbcImage(baseDir,"pp_smooth")
-  return pp[i3]
+  spp = Sampling(len(pp[0][0]),d1,f1)
+  plot2(pp[i3],title="PP",s1=spp,s2=s2,clips1=iClips,vLabel="PP time (s)",
+        vInterval=0.2,cmap1=iMap,cbw=100)
+  return pp[i3],spp
 
 def getPs1(i3):
   # makeSubset(baseDir,"ps1_fkk_smooth",0,n1ps-1,0,n2-1,0,n3-1)
-  ps1 = getGbcImage(baseDir,"ps1_fkk_smooth_1501_150_145",1501)
-  return ps1[i3]
+  # ps1 = getGbcImage(baseDir,"ps1_fkk_smooth_1501_150_145",1501)
+  ps1 = getGbcImage(baseDir,"ps1_fkk_smooth")
+  sps1 = Sampling(len(ps1[0][0]),d1,f1)
+  # plot2(ps1[i3],title="PS1",s1=sps1,s2=s2,clips1=iClips,vLabel="PS1 time (s)",
+  #       vInterval=0.2,cmap1=iMap,cbw=100)
+  return ps1[i3],sps1
 
 def getPs2(i3):
   # makeSubset(baseDir,"ps2",0,n1ps-1,0,n2-1,0,n3-1)
-  ps2 = getGbcImage(baseDir,"ps2_1501_150_145",1501)
-  return ps2[i3]
+  # ps2 = getGbcImage(baseDir,"ps2_1501_150_145",1501)
+  ps2 = getGbcImage(baseDir,"ps2_fk_smooth")
+  sps2 = Sampling(len(ps2[0][0]),d1,f1)
+  plot2(ps2[i3],title="PS2",s1=sps2,s2=s2,clips1=iClips,vLabel="PS2 time (s)",
+        vInterval=0.2,cmap1=iMap,cbw=100)
+  return ps2[i3],sps2
   # makeSubset2(baseDir,"ps2_fk72",0,n1ps-1,0,n2-1)
   # return readImage(baseDir,"ps2_fk72_1501_150",1501,150)
 
-def horizonFile(name):
-  return horizonDir+name+".dat"
+def getShifts(sf,f,sg,g,dw,g1,g2):
+  return dw.findShifts(sf,f,sg,g,g1,g2)
 
-def horizonRead(name):
-  return Horizon.readBinary(horizonFile(name))
+def getShiftsAvg(sf,f,sg,g,dw,g1):
+  e = dw.computeErrorsSum(sf,f,sg,g)
+  u = dw.findShifts(sf,e,g1)
+  n1 = len(u)
+  u2 = zerofloat(n1,n2)
+  for i2 in range(n2):
+    u2[i2] = copy(u)
+  return u2,e
 
-def printConstraints(dg1):
-  k1min = int(math.ceil( r1min*dg1))
-  k1max = int(math.floor(r1max*dg1))
-  k2min = int(math.ceil( r2min*dg2))
-  k2max = int(math.floor(r2max*dg2))
-  info = """Constraints:
-  r1min=%g, r1max=%g, dg1=%g, k1min=%g, k1max=%g
-  r2min=%g, r2max=%g, dg2=%g, k2min=%g, k2max=%g"""%(r1min,r1max,dg1,k1min,
-                                                     k1max,r2min,r2max,dg2,
-                                                     k2min,k2max)
-  print info
+def getG1Regular(sf,dg1,dw):
+  se = dw.getSampling1()
+  g1 = Subsample.subsample(se.getCount(),dg1)
+  return Subsample.indicesToSampling(sf,g1)
 
-def goShiftsSAG(f,fw,g,dw,dg1,ng,fname,gname):
-  printConstraints(dg1)
-  goSlopes(f) # compute slopes for flattening
-  goFlat(f) # flatten
-  x1m = readImage(twoDDir,"x1",ne1,n2) # flattening mappings
-  ff = readImage(twoDDir,"ff",ne1,n2) # flattened image
-  g1,g1Flat = makeAutomaticGrid(x1m,ff,dw,dg1,ng=ng) # structure aligned grid
+def getG1Envelope(sf,f,dg1,dw):
+  se = dw.getSampling1()
+  g1 = Subsample.subsampleEnvelope(se.getCount(),f,dg1)
+  return Subsample.indicesToSampling(sf,g1)
+
+def getG1Horizons(horizons,dw):
+  se = dw.getSampling1()
+  g1 = makeHorizonGrid(se.getCount(),horizons) # g1 samples
+  return mul(d1,g1)
+
+def getG2(dg2):
   g2 = Subsample.subsample(n2,dg2) # simple regular interval grid
+  g2 = Subsample.indicesToSampling(s2,g2)
   print "g2:"; dump(g2)
-  # Compute time shifts u with values only at g1 and g2 coordinates and
-  # interpolate to get time shifts everywhere. Use Interp.MONOTONIC for smoother
-  # shifts, but Interp.LINEAR is really the answer most consistent with the
-  # method of finding time shifts. Interp.LINEAR for 2nd dimension should not be
-  # changed.
-  u = dw.findShifts(fw,g,getG1Floats(x1m,g1Flat),g2,Interp.MONOTONIC,
-                    Interp.LINEAR)
-  checkShifts2(u)
-  g1f = zeroint(ne1,n2)
-  for i2 in range(n2):
-    g1f[i2] = copy(g1Flat)
-  x1u,x2u = getShiftCoords(g1,g2,u)
-  x1u,x2u = mul(x1u,d1),mul(x2u,d1)
-  x12SliceA = [[x1u,x2u,"coarse grid","rO",10.0]]
-  uA = [[mul(u,d1),"u","w-",2.0]]
-  plotErrors(fw,g,dw,uA,fname,x12SliceA=x12SliceA)
-  x1i,x2i = getSparseGridCoords(g1,g2); plotGrid(f,x1i,x2i,fname)
-  plotShifts(f,u,fname)
-  plotVpvs(f,u,fname)
-  plotWarped(f,g,dw,u,fname,gname)
-  return u
+  return g2
 
-def goShiftsHOR(f,fw,g,dw,horizons,fname,gname):
-  g1 = makeHorizonGrid(horizons)
-  g2 = Subsample.subsample(n2,dg2) # simple regular interval grid
-  print "g2:"; dump(g2)
-  # Compute time shifts u with values only at g1 and g2 coordinates and
-  # interpolate to get time shifts everywhere. Use Interp.MONOTONIC for smoother
-  # shifts, but Interp.LINEAR is really the answer most consistent with the
-  # method of finding time shifts. Interp.LINEAR for 2nd dimension should not be
-  # changed.
-  u = dw.findShifts(fw,g,g1,g2,Interp.MONOTONIC,Interp.LINEAR)
-  checkShifts2(u)
-  x1u,x2u = getShiftCoords(getG1Ints2(g1),g2,u)
-  x1u,x2u = mul(x1u,d1),mul(x2u,d1)
-  x12SliceA = [[x1u,x2u,"coarse grid","rO",10.0]]
-  uA = [[mul(u,d1),"u","w-",2.0]]
-  plotErrors(fw,g,dw,uA,fname,x12SliceA=x12SliceA)
-  x1i,x2i = getSparseGridCoords(g1,g2)
-  plotGrid(f,x1i,x2i,fname)
-  plotShifts(f,u,fname)
-  plotVpvs(f,u,fname)
-  plotWarped(f,g,dw,u,fname,gname)
-  return u
-
-def getEnvelopeSum(ff):
-  htf = HilbertTransformFilter()
-  n2 = len(ff)
-  n1 = len(ff[0])
-  es = zerofloat(n1)
-  for i2 in range(n2):
-    x = ff[i2]
-    y = copy(x)
-    htf.apply(n1,x,y)
-    for i1 in range(n1):
-      es[i1] = es[i1] + sqrt(x[i1]*x[i1]+y[i1]*y[i1])
-  return es
-
-def makeAutomaticGrid(x1m,ff,dw,dg1,ng=None):
-  es = getEnvelopeSum(ff)
-  if ng:
-    g1Flat = Subsample.subsample(es,dg1,ng)
-  else:
-    g1Flat = Subsample.subsample(es,dg1)
-  ng = len(g1Flat)
-  g1 = zeroint(ng,n2)
-  for i2 in range(n2):
-    for i1 in range(ng):
-      x = x1m[i2][g1Flat[i1]]
-      g1[i2][i1] = int(x+0.5)
-  print "g1Flat:"; dump(g1Flat)
-  return g1,g1Flat
-
-def makeHorizonGrid(horizons):
+def makeHorizonGrid(ne,horizons):
   n1 = len(horizons)+2
   n1m = n1-1
   g1 = zerofloat(n1,n2)
-  last = ne1-1
+  last = ne-1
   for i2 in range(n2):
     g1[i2][0  ] = 0.0
     g1[i2][n1m] = last
@@ -258,187 +299,120 @@ def makeHorizonGrid(horizons):
       g1[i2][i1] = z[i2]
   return g1
 
-def getG1Floats(x1m,g1Flat):
-  ng = len(g1Flat)
-  g1 = zerofloat(ng,n2)
-  for i2 in range(n2):
-    for i1 in range(ng):
-      g1[i2][i1] = x1m[i2][g1Flat[i1]]
-  return g1
-
-def getG1Ints(g1):
-  ng = len(g1)
-  g1i = zeroint(ng)
-  for i1 in range(ng):
-    g1i[i1] = int(g1[i1]+0.5)
-  return g1i
-
-def getG1Ints2(g1):
-  ng2 = len(g1)
-  ng1 = len(g1[0])
-  g1i = zeroint(ng1,ng2)
-  for i2 in range(ng2):
-    for i1 in range(ng1):
-      g1i[i2][i1] = int(g1[i2][i1]+0.5)
-  return g1i
-
-def getShiftCoords(g1,g2,u):
+def getShiftCoords(s1,g1,s2,g2,u):
   ng1 = len(g1[0])
   ng2 = len(g2)
   x1 = fillfloat(-10,ng1,n2)
   x2 = fillfloat(-10,ng1,n2)
   for i2 in range(ng2):
-    g2i = g2[i2]
+    g2i = s2.indexOfNearest(g2[i2])
     for i1 in range(ng1):
+      g1i = s1.indexOfNearest(g1[g2i][i1])
       x1[g2i][i1] = g1[g2i][i1]
-      x2[g2i][i1] = u[g2i][g1[g2i][i1]]
+      x2[g2i][i1] = u[g2i][g1i]
   return x1,x2
 
-def getShiftCoordsI2(g1,i2,u):
-  ng1 = len(g1[0])
-  x1 = fillfloat(-10,ng1)
-  x2 = fillfloat(-10,ng1)
-  for i1 in range(ng1):
-    x1[i1] = g1[i2][i1]
-    x2[i1] = u[int(g1[i2][i1]+0.5)]
-  return x1,x2
-
-def getShiftCoords1(g1,u):
+def getShiftCoords1(s1,g1,u):
   ng1 = len(g1)
   x1 = fillfloat(-10,ng1)
   x2 = fillfloat(-10,ng1)
   for i1 in range(ng1):
+    g1i = s1.indexOfNearest(g1[i1])
     x1[i1] = g1[i1]
-    x2[i1] = u[int(g1[i1]+0.5)]
+    x2[i1] = u[g1i]
   return x1,x2
 
-def getSparseGridCoords(g1,g2):
+def getSparseGridCoords(g1,s2,g2):
   ng1 = len(g1[0])
   ng2 = len(g2)
   x1 = zerofloat(ng1,ng2)
   x2 = zerofloat(ng1,ng2)
   for i2 in range(ng2):
+    g2i = s2.indexOfNearest(g2[i2])
     for i1 in range(ng1):
-      x1[i2][i1] = g1[g2[i2]][i1];
+      x1[i2][i1] = g1[g2i][i1];
       x2[i2][i1] = g2[i2];
   return x1,x2
 
-def goSlopes(f):
-  fs = zerofloat(ne1,n2) # f with only ne1 samples
-  for i2 in range(n2):
-    for i1 in range(ne1):
-      fs[i2][i1] = f[i2][i1]
-  s1f = Sampling(len(fs[0]))
-  s2f = Sampling(len(fs))
-  sigma1 = 8
-  sigma2 = 12
-  print "LSF: sigma1=%g, sigma2=%g"%(sigma1,sigma2)
-  pmax = 2.0
-  lsf = LocalSlopeFinder(sigma1,sigma2,pmax)
-  p2 = zerofloat(s1f.getCount(),s2f.getCount())
-  el = zerofloat(s1f.getCount(),s2f.getCount())
-  lsf.findSlopes(fs,p2,el)
-  el = pow(el,4)
-  writeImage(twoDDir,"p2",p2)
-  writeImage(twoDDir,"el",el)
-  # plot2(el,title="Linearity",s1=s1f,hLabel="crossline",vLabel="time (samples)",
-  #       cbar="linearity",cmap1=jet,clips1=[0.0,1.0],width=600,height=900,
-  #       cbw=100)
-  # plot2(p2,title="Slopes",s1=s1f,hLabel="crossline",vLabel="time (samples)",
-  #       cbar="slope",cmap1=bwr,width=600,height=900,cbw=100)
+def horizonFile(name):
+  return horizonDir+name+".dat"
 
-def goFlat(f):
-  fs = zerofloat(ne1,n2) # f with only ne1 samples
-  for i2 in range(n2):
-    for i1 in range(ne1):
-      fs[i2][i1] = f[i2][i1]
-  s1f = Sampling(len(fs[0]))
-  s2f = Sampling(len(fs))
-  p2 = readImage(twoDDir,"p2",ne1,n2)
-  el = readImage(twoDDir,"el",ne1,n2)
-  fl = Flattener2()
-  fl.setWeight1(0.2)
-  fm = fl.getMappingsFromSlopes(s1f,s2f,p2,el)
-  ff = fm.flatten(fs)
-  h = fm.unflatten(ff)
-  s = fm.getShiftsS()
-  r = fm.getShiftsR()
-  x1 = fm.x1
-  y1 = fm.u1
-  writeImage(twoDDir,"x1",x1)
-  writeImage(twoDDir,"y1",y1)
-  writeImage(twoDDir,"ff",ff)
-  writeImage(twoDDir,"s",s)
-  writeImage(twoDDir,"r",r)
-  # plot2(ff,title="PP Flat",hLabel="crossline",vLabel="Tau",cbw=100)
-  # plot2(h,title="PP Unflattened",s1=s1f,hLabel="crossline",
-  #       vLabel="time (samples)",cbw=100)
-  # plot2(s,title="PP Flat Shifts",s1=s1f,hLabel="crossline",
-  #       vLabel="time (samples)",cbar="shift (samples)",cmap1=jet,clips1=None,
-  #       cbw=100)
-  print "average shift =",sum(s)/(n1*n2),"samples"
+def horizonRead(name):
+  return Horizon.readBinary(horizonFile(name))
+
+def getCompressedSampling(sg,c):
+  fg = sg.getFirst()
+  lg = sg.getLast()
+  dg = sg.getDelta()
+  return Sampling(int(lg/c/dg)+1,dg,fg)
 
 #############################################################################
 
-def setPlotVars(n1w,nl,nf1,sf1):
-  global ne1,nel,se,su,el,ul,xl,n1,s1
-  n1,s1 = nf1,sf1
-  ne1,nel = n1w,nl
-  se = Sampling(ne1,d1,f1) # error sampling
-  su = Sampling(nel,d1,f1) # shift sampling
-  el = [se.getFirst(),se.getLast()] # error limits for plotting
-  # el = [0.0,1.0] # error limits for plotting
-  ul = [su.getFirst(),su.getLast()] # shift limits for plotting
-  xl = [s2.getFirst(),s2.getLast()] # trace limits for plotting
+# def setLimits(dw):
+#   global se,el,su,ul,xl
+#   se = dw.getSampling1()
+#   su = dw.getSamplingU()
+#   el = [se.getFirst(),se.getLast()]
+#   ul = [su.getFirst(),su.getLast()]
+#   xl = [s2.getFirst(),s2.getLast()]
 
-def plotGrid(f,x1i,x2i,fname):
+def setLimits(mse,msu):
+  global se,el,su,ul,xl
+  se = mse()
+  su = msu()
+  el = [se.getFirst(),se.getLast()]
+  ul = [su.getFirst(),su.getLast()]
+  xl = [s2.getFirst(),s2.getLast()]
+
+def plotGrid(sf,f,x1i,x2i,fname):
   # Plot f with grid points
-  x1i = mul(x1i,d1)
-  # x2i = add(25,x2i)
-  x2i = mul(x2i,d2)
-  plot2(f,x12=x1i,x22=x2i,title=fname,s1=s1,s2=s2,vLabel=fname+" time (s)",
+  plot2(f,x12=x1i,x22=x2i,title=fname,s1=sf,s2=s2,vLabel=fname+" time (s)",
         hLimits=xl,vLimits=el,clips1=iClips,cmap1=iMap,cbw=100)
 
-def plotShifts(f,u,fname):
+def plotShifts(sf,f,u,fname):
   # Plot 2D shifts
-  us = mul(u,d1)
   zm = ZeroMask(f)
-  us = WarpUtils.extrapolate(len(f[0]),us)
-  zm.apply(0.00,us)
-  plot2(us,title="Vertical shifts",s1=s1,s2=s2,vLabel=fname+" time (s)",
-        cbar="Vertical shift (s)",cmap1=jet,clips1=uClips,vLimits=el,
-        cbw=100)
+  uc = copy(u)
+  zm.apply(0.00,uc)
+  plot2(uc,title="Time shifts",s1=sf,s2=s2,vLabel=fname+" time (s)",
+        cbar="Time shift (s)",vLimits=el,cmap1=jet,clips1=uClips,cbw=100)
 
-def plotVpvs(f,u,fname):
+def plotVpvs(sf,f,u,c,fname):
   # Plot Vp/Vs ratios
   zm = ZeroMask(f)
-  vpvs = WarpUtils.vpvs(u)
-  vpvs = WarpUtils.extrapolate(len(f[0]),vpvs)
+  vpvs = WarpUtils.vpvs(sf,u,c)
   print "vpvs: min=%g, max=%g"%(min(vpvs),max(vpvs))
   zm.apply(0.00,vpvs)
   plot2(f,g=vpvs,title="Vp/Vs",s1=s1,s2=s2,vLabel=fname+" time (s)",
         cbar="Vp/Vs ratio",clips1=iClips,cmap2=jet,clips2=vClips,hLimits=xl,
         vLimits=el,cmap1=iMap,cbw=100)
 
-def plotWarped(f,g,dw,u,fname,gname):
+def plotWarped(sf,f,w,fname,gname):
   # Plot Warped g image and the difference between the warped and input.
-  h = dw.applyShifts(n1,g,u)
-  plot2(h,title=gname+" warped",s1=s1,s2=s2,vLabel=fname+" time (s)",
+  plot2(w,title=gname+" warped",s1=sf,s2=s2,vLabel=fname+" time (s)",
         vLimits=el,clips1=iClips,cmap1=iMap,cbw=100)
-  nrms = WarpUtils.computeNrms(ne1,f,h)
-  print "nrms=%g"%nrms
+  print "NRMS 1: %g"%WarpUtils.computeNrms(se.getCount(),f,w)
   # d = sub(h,f)
   # plot2(d,title=fname+"-"+gname+" warped"+s1=s1,s2=s2,
   #       vLabel=fname+" time (s)",vLimits=el,clips1=iClips,cmap1=iMap,cbw=100)
 
-def plotErrors(fw,g,dw,uA,fname,x12SliceA=None):
+def plotErrors(sf,f,sg,g,dw,uA,fname,x12SliceA=None):
   # Plot Alignment Errors with coarse grid points and shifts
-  e = dw.computeErrors2(fw,g)
-  e = WarpUtils.transposeLag12(e)
+  e = dw.computeErrors2(sf,f,sg,g)
+  e = Transpose.transpose312(e)
   WarpUtils.normalizeErrors(e)
   plot3(e,pA=uA,x12SliceA=x12SliceA,title="AE",s1=se,s2=su,
-        hLabel=fname+" time (s)",vLabel="Vertical shift (s)",cbar="Error",
+        hLabel=fname+" time (s)",vLabel="Time shift (s)",cbar="Error",
         clips1=[0,0.15],width=900,height=600,hLimits=el,vLimits=ul,
+        o=x1right_x2up)
+
+def plotErrorsAvg(e,dw,uA,fname,x12SingleA=None):
+  # Plot Alignment Errors with coarse grid points and shifts
+  e = Transpose.transpose12(e)
+  WarpUtils.normalizeErrors(e)
+  plot2(e,pA=uA,title="AE",s1=se,s2=su,x12SingleA=x12SingleA,
+        hLabel=fname+" time (s)",vLabel="Time shift (s)",cbar="Error",
+        clips1=[0,0.5],width=900,height=600,hLimits=el,vLimits=ul,
         o=x1right_x2up)
 
 ###############################################################################

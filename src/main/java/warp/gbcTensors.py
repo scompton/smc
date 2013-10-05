@@ -13,8 +13,9 @@ c = 4.0
 ###############################################################################
 
 def main(args):
-  goPP()
-  goPS1()
+  # goPP()
+  # goPS1()
+  goPS2()
 
 def goPP():
   pp = getGbcImage(baseDir,"pp")
@@ -45,7 +46,22 @@ def goPS1():
           clips1=iClips,cbw=100,limits1=[0.0,3.0])
   writeImage(baseDir,"ps1_fkk_smooth",ps1s)
   # showTwo(ps1,ps1s)
-  
+
+def goPS2():
+  ps2 = getGbcImage(baseDir,"ps2_fk")
+  zm = ZeroMask(ps2)
+  goTensors(ps2,"ps2_fk_tensors")
+  # display(ps2,name="ps2_fk_tensors")
+  ps2s = goSmooth(ps2,"ps2_fk_tensors")
+  WarpUtils.normalize(ps2s,-1.5,1.5)
+  zm.apply(0.0,ps2s)
+  plotPP3(ps2,s1=s1,s2=s2,s3=s3,title="PS2",label1="PS2 time (s)",clips1=iClips,
+          cbw=100,limits1=[0.0,3.0],he0=320)
+  plotPP3(ps2s,s1=s1,s2=s2,s3=s3,title="PS2 Smooth",label1="PS2 time (s)",
+          clips1=iClips,cbw=100,limits1=[0.0,3.0],he0=320)
+  writeImage(baseDir,"ps2_fk_smooth",ps2s)
+  # showTwo(ps1,ps1s)
+
 def goTensors(f,name):
   lof = LocalOrientFilter(sigma1,sigma2,sigma3)
   et3 = lof.applyForTensors(f)

@@ -16,11 +16,14 @@ from edu.mines.jtk.mosaic import *
 from edu.mines.jtk.mosaic.PixelsView import *
 from edu.mines.jtk.ogl.Gl import *
 from edu.mines.jtk.sgl import *
+from edu.mines.jtk.util import *
 from edu.mines.jtk.util.ArrayMath import *
 
+from dsp import *
 from dnp import *
 from filter import *
 from gbc import *
+from utils import *
 from viewer import *
 from warp import *
 from warp.ShiftInterp import Method
