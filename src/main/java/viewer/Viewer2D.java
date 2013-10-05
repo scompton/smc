@@ -1,39 +1,18 @@
 package viewer;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.*;
 
-import javax.swing.DefaultBoundedRangeModel;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.JTextArea;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
+import javax.swing.*;
+import javax.swing.event.*;
 
-import edu.mines.jtk.dsp.EigenTensors2;
-import edu.mines.jtk.dsp.Sampling;
-import edu.mines.jtk.io.ArrayInputStream;
-import edu.mines.jtk.mosaic.ColorBar;
-import edu.mines.jtk.mosaic.DRectangle;
-import edu.mines.jtk.mosaic.Mosaic;
-import edu.mines.jtk.mosaic.PixelsView;
-import edu.mines.jtk.mosaic.Projector;
-import edu.mines.jtk.mosaic.TensorsView;
-import edu.mines.jtk.mosaic.PlotPanel;
+import edu.mines.jtk.dsp.*;
+import edu.mines.jtk.io.*;
+import edu.mines.jtk.mosaic.*;
 import edu.mines.jtk.mosaic.PlotPanel.Orientation;
-import edu.mines.jtk.mosaic.PointsView;
-import edu.mines.jtk.mosaic.Tile;
-import edu.mines.jtk.util.Check;
-import edu.mines.jtk.util.Clips;
+import edu.mines.jtk.util.*;
 
 /**
  * Wraps a PlotPanel with one Tile for 2D or 3D pixels and
@@ -440,6 +419,7 @@ public class Viewer2D {
    */
   private JTextArea addMouseTracker() {
     final JTextArea text = new JTextArea("World coordinates:");
+    text.setEditable(false);
     Mosaic mosaic = _pp.getMosaic();
     int nrows = mosaic.countRows();
     int ncols = mosaic.countColumns();
