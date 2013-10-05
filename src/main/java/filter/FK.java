@@ -1,35 +1,18 @@
 package filter;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 
-import edu.mines.jtk.awt.ColorMap;
-import edu.mines.jtk.dsp.Fft;
-import edu.mines.jtk.dsp.Sampling;
-import edu.mines.jtk.dsp.ZeroMask;
-import edu.mines.jtk.io.ArrayInputStream;
-import edu.mines.jtk.io.ArrayOutputStream;
-import edu.mines.jtk.mosaic.DRectangle;
-import edu.mines.jtk.mosaic.PixelsView;
-import edu.mines.jtk.mosaic.PointsView;
-import edu.mines.jtk.mosaic.Projector;
-import edu.mines.jtk.mosaic.Tile;
+import edu.mines.jtk.awt.*;
+import edu.mines.jtk.dsp.*;
+import edu.mines.jtk.io.*;
+import edu.mines.jtk.mosaic.*;
+import edu.mines.jtk.util.*;
 
-import viewer.Viewer2D;
-import viewer.ViewerFrame;
+import viewer.*;
 
 import static edu.mines.jtk.util.ArrayMath.*;
 
@@ -53,14 +36,52 @@ public class FK {
    * @param f
    */
   public FK(Sampling s1, Sampling s2, float[][] f) {
+    _s1 = s1;
+    _s2 = s2;
     _f = f;
+    int n1 = _s1.getCount();
+    int n2 = _s2.getCount();
+    Check.argument(n1==_f[0].length,"s1 consistent with array f");
+    Check.argument(n2==_f.length,"s2 consistent with array f");
+    _fft = new Fft(n1,n2);
+    _fft.setPadding1(n1);
+    _fft.setPadding2(n2);
+    _sf1 = _fft.getFrequencySampling1();
+    _sf2 = _fft.getFrequencySampling2();
+    _sf2 = new Sampling(_sf2.getCount(),_sf2.getDelta(),-0.5);
+    _forward = _fft.applyForward(_f);
+    sortTraces(_forward);
+  }
+
+  public float[][] filter(double m) {
+    float[][] mask = getMask(_sf1,_sf2,m);
+    return mul(_forward,mask);
+  }
+
+  public float[][] inverse(float[][] filtered) {
+    sortTraces(filtered);
+    float[][] inverse = _fft.applyInverse(filtered);
+    if (_zm!=null) _zm.apply(0.0f,inverse);
+    return inverse;
+  }
+
+  public void designFilter() {
     _timeView = new Viewer2D();
-    _timeView.addPixels(s1,s2,f,"f");
+    _timeView.addPixels(_s1,_s2,_f,"f");
     _timeView.getViewerFrame().setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     _timeView.setSize(WIDTH,HEIGHT);
     addWriteOption();
     _timeView.show();
-    goFft();
+
+    Viewer2D v = new Viewer2D();
+    PixelsView pv = v.addPixels(_sf1,_sf2,cabs(_forward),"forward");
+    pv.setColorModel(ColorMap.JET);
+    pv.setPercentiles(2.0f,99.9f);
+    Tile tile = v.getPlotPanel().getTile(0,0);
+    addPickListener(tile,v,pv);
+    v.setVLimits(0.0,0.5);
+    v.setSize(WIDTH,HEIGHT);
+    v.show();
   }
 
   /**
@@ -99,8 +120,12 @@ public class FK {
 
   ///////////////////////////////////////////////////////////////////////////
   // Private 
-  private final float[][] _f;
+  private final float[][] _f; // Input data
+  private final Sampling _s1, _s2; // Data sampling
+  private Sampling _sf1, _sf2; // Frequency sampling
   private float[][] _filtered = null;
+  private float[][] _forward = null;
+  private Fft _fft;
   private PixelsView _fpv;
   private PointsView _pv;
   private ZeroMask _zm;
@@ -110,26 +135,6 @@ public class FK {
   private static final int HEIGHT = 1000;
 
   private void goFft() {
-    int n2 = _f.length;
-    int n1 = _f[0].length;
-    Fft fft = new Fft(n1,n2);
-    fft.setPadding1(n1);
-    fft.setPadding2(n2);
-    Sampling sf1 = fft.getFrequencySampling1();
-    Sampling sf2 = fft.getFrequencySampling2();
-    int nk = sf2.getCount();
-    sf2 = new Sampling(nk,sf2.getDelta(),-0.5);
-    float[][] forward = fft.applyForward(_f);
-    sortTraces(nk,forward);
-    Viewer2D v = new Viewer2D();
-    PixelsView pv = v.addPixels(sf1,sf2,cabs(forward),"forward");
-    pv.setColorModel(ColorMap.JET);
-    pv.setPercentiles(2.0f,99.9f);
-    Tile tile = v.getPlotPanel().getTile(0,0);
-    addPickListener(sf1,sf2,tile,v,pv,forward,fft);
-    v.setVLimits(0.0,0.5);
-    v.setSize(WIDTH,HEIGHT);
-    v.show();
   }
 
   private void addWriteOption() {
@@ -172,11 +177,10 @@ public class FK {
   }
 
   private void addPickListener(
-      final Sampling sf1, final Sampling sf2, final Tile tile, final Viewer2D v, 
-      final PixelsView pv, final float[][] f, final Fft fft)
+      final Tile tile, final Viewer2D v, final PixelsView pv)
   {
-    final int nk = sf2.getCount();
-    final double[] kd = sf2.getValues();
+    final int nk = _sf2.getCount();
+    final double[] kd = _sf2.getValues();
     final float[] k = new float[nk];
     for (int i=0; i<nk; i++)
       k[i] = (float)kd[i];
@@ -193,8 +197,8 @@ public class FK {
         double wx = hp.v(vr.width *((double)x/dim.width )+vr.x);
         double wy = vp.v(vr.height*((double)y/dim.height)+vr.y);
         double m = wy/wx;
-        float[][] mask = getMask(sf1,sf2,m);
-        float[][] filtered = mul(f,mask);
+        print("slope: "+m);
+        float[][] filtered = filter(m);
         pv.set(cabs(filtered));
         for (int i=0; i<nk; i++) p[i] = (float)abs(kd[i]*m);
         if (_pv==null) {
@@ -203,8 +207,7 @@ public class FK {
         } else {
           _pv.set(p,k);
         }
-        sortTraces(nk,filtered);
-        setData(fft.applyInverse(filtered));
+        setData(inverse(filtered));
         super.mouseClicked(e);
       }
     });
@@ -249,7 +252,8 @@ public class FK {
     _fpv.set(_filtered);
   }
 
-  private void sortTraces(int n2, float[][] f) {
+  private void sortTraces(float[][] f) {
+    int n2 = _sf2.getCount();
     int h2 = n2/2;
     float[][] fc = copy(f);
     for (int i2=0; i2<n2; i2++) {
