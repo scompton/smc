@@ -1,6 +1,8 @@
 package warp;
 
 import edu.mines.jtk.dsp.*;
+import edu.mines.jtk.interp.*;
+import edu.mines.jtk.interp.CubicInterpolator.*;
 import edu.mines.jtk.util.*;
 
 import static edu.mines.jtk.util.ArrayMath.*;
@@ -136,6 +138,141 @@ public class WarpUtils {
   }
 
   /**
+   * Get the {@code grid} as sample indices.
+   * @param s Sampling that this {@code grid} subsamples.
+   * @param grid the subsample locations defined in terms of Sampling {@code s}.
+   * @return the {@code grid} as sample indices.
+   * @throws IllegalArgumentException if any of the grid locations are not valid
+   *   with the given Sampling {@code s}.
+   */
+  public static int[][][] gridCoordsToSamples(Sampling s, float[][][] grid) {
+    int n2 = grid[0].length;
+    int n3 = grid.length;
+    int[][][] g = new int[n3][n2][];
+    for (int i3=0; i3<n3; i3++)
+      for (int i2=0; i2<n2; i2++)
+        g[i3][i2] = gridCoordsToSamples(s,grid[i3][i2]);
+    return g;
+  }
+
+  /**
+   * Get the {@code grid} as sample indices.
+   * @param s Sampling that this {@code grid} subsamples.
+   * @param grid the subsample locations defined in terms of Sampling {@code s}.
+   * @return the {@code grid} as sample indices.
+   * @throws IllegalArgumentException if any of the grid locations are not valid
+   *   with the given Sampling {@code s}.
+   */
+  public static int[][] gridCoordsToSamples(Sampling s, float[][] grid) {
+    int n2 = grid.length;
+    int[][] g = new int[n2][];
+    for (int i2=0; i2<n2; i2++)
+      g[i2] = gridCoordsToSamples(s,grid[i2]);
+    return g;
+  }
+
+  /**
+   * Get the {@code grid} as sample indices.
+   * @param s Sampling that this {@code grid} subsamples.
+   * @param grid the subsample locations defined in terms of Sampling {@code s}.
+   * @return the {@code grid} as sample indices.
+   * @throws IllegalArgumentException if any of the grid locations are not valid
+   *   with the given Sampling {@code s}.
+   */
+  public static int[] gridCoordsToSamples(Sampling s, float[] grid) {
+    Almost a = new Almost();
+    float f = (float)s.getFirst();
+    float l = (float)s.getLast();
+    int ng = grid.length;
+    int[] t = new int[ng]; // temp sample indices
+    int count = 0;
+    int is = -1; // save last index
+    for (int ig=0; ig<ng; ig++) {
+      float v = grid[ig];
+      if (a.ge(v,f) && a.le(v,l)) {
+        int i = s.indexOfNearest(v);
+        if (i!=is) { // no duplicate entries
+          t[count] = i;
+          count++;
+        }
+        is = i;
+      } else {
+        print("Error: value "+v+" is out of bounds! First="+f+", Last="+l);
+      }
+    }
+    if (count!=ng) {
+      print("Grid values:"); dump(grid);
+      throw new IllegalArgumentException(
+        "Error: Only "+count+" of "+ng+" input grid coordinates are valid "+
+        "with the specified sampling "+s.toString());
+    }
+    return copy(count,t);
+  }
+
+  /**
+   * Computes the slope from the given {@code vpvs} and compression constant.
+   * @param vpvs
+   * @param c
+   * @return the slope
+   */
+  public static float getSlope(float vpvs, float c) {
+    return (vpvs-2.0f*c+1.0f)/(2.0f*c);
+  }
+
+  /**
+   * Computes time shifts between PP and PS2 images, here referred to as 'U2'
+   * time shifts.
+   * @param s1
+   * @param u1
+   * @param sS
+   * @param uS
+   * @return
+   */
+  public static float[] computeU2(
+      Sampling s1, float[] u1, Sampling sS, float[] uS)
+  {
+    int n1 = u1.length;
+    int nS = uS.length;
+    double f1 = s1.getFirst();
+    double fS = sS.getFirst();
+    double d1 = s1.getDelta();
+    double dS = sS.getDelta();
+    float[] xS = new float[nS];
+    for (int iS=0; iS<nS; iS++)
+      xS[iS] = (float)(fS+iS*dS);
+    CubicInterpolator ci = new CubicInterpolator(Method.LINEAR,xS,uS);
+    float[] u2 = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      u2[i1] = u1[i1]+ci.interpolate((float)(f1+i1*d1)+u1[i1]);
+    return u2;
+  }
+
+  public static float[][] ps1ToPpTime(
+      Sampling sf, float[] f, Sampling sg, float[][] g)
+  {
+    int n2 = g.length;
+    float[][] gp = new float[n2][];
+    for (int i2=0; i2<n2; i2++)
+      gp[i2] = ps1ToPpTime(sf,f,sg,g[i2]);
+    return gp;
+  }
+
+  public static float[] ps1ToPpTime(
+      Sampling sf, float[] u1, Sampling sg, float[] g)
+  {
+    int n1 = u1.length;
+    int ng = g.length;
+    float[] xg = new float[ng];
+    for (int ig=0; ig<ng; ig++)
+      xg[ig] = (float)sg.getValue(ig);
+    CubicInterpolator ci = new CubicInterpolator(Method.LINEAR,xg,g);
+    float[] gp = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      gp[i1] = ci.interpolate((float)(sf.getValue(i1)+u1[i1]));
+    return gp;
+  }
+
+  /**
    * Computes an array of VpVs ratios an array of shifts u
    * using a backward difference approximation.
    * The relationship is defined as vpvs(t) = 1+2*(du/dt)
@@ -152,7 +289,6 @@ public class WarpUtils {
     return vpvs;
   }
 
-
   /**
    * Computes an array of VpVs ratios an array of shifts u. The relationship is
    * defined as vpvs(t) = 1+2*(du/dt).
@@ -160,14 +296,20 @@ public class WarpUtils {
    * @return computed interval Vp/Vs values.
    */
   public static float[] vpvs(Sampling su, float[] u) {
+    return vpvs(su,u,1.0f);
+  }
+
+  public static float[] vpvs(Sampling su, float[] u, float c) {
     float dui = 1.0f/(float)su.getDelta();
     int n = u.length;
     int nm1 = n-1;
+    float twoC = 2.0f*c;
+    float twoCm1 = twoC-1.0f;
     float[] vpvs = new float[n];
-    vpvs[ 0 ] = 1.0f + 2.0f*(u[ 1 ]-u[  0  ])*dui; // at i1=0, forward diff
-    vpvs[nm1] = 1.0f + 2.0f*(u[nm1]-u[nm1-1])*dui; // at i1=nm1, backward diff
+    vpvs[ 0 ] = twoCm1 + twoC*(u[ 1 ]-u[  0  ])*dui; // forward diff
+    vpvs[nm1] = twoCm1 + twoC*(u[nm1]-u[nm1-1])*dui; // backward diff
     for (int i1=1; i1<nm1; i1++)
-      vpvs[i1] = 1.0f + (u[i1+1]-u[i1-1])*dui; // 2s cancel
+      vpvs[i1] = twoCm1 + c*(u[i1+1]-u[i1-1])*dui; // 2s cancel
     return vpvs;
   }
 
@@ -178,10 +320,14 @@ public class WarpUtils {
    * @return computed interval Vp/Vs values.
    */
   public static float[][] vpvs(Sampling su, float[][] u) {
+    return vpvs(su,u,1.0f);
+  }
+
+  public static float[][] vpvs(Sampling su, float[][] u, float c) {
     int n2 = u.length;
     float[][] vpvs = new float[n2][];
     for (int i2=0; i2<n2; i2++)
-      vpvs[i2] = vpvs(su,u[i2]);
+      vpvs[i2] = vpvs(su,u[i2],c);
     return vpvs;
   }
 
@@ -192,11 +338,204 @@ public class WarpUtils {
    * @return computed interval Vp/Vs values.
    */
   public static float[][][] vpvs(Sampling su, float[][][] u) {
+    return vpvs(su,u,1.0f);
+  }
+
+  public static float[][][] vpvs(Sampling su, float[][][] u, float c) {
     int n3 = u.length;
     float[][][] vpvs = new float[n3][][];
     for (int i3=0; i3<n3; i3++)
-      vpvs[i3] = vpvs(su,u[i3]);
+      vpvs[i3] = vpvs(su,u[i3],c);
     return vpvs;
+  }
+
+  /**
+   * Computes gammaS, a measure of the time delay between two split shear waves.
+   * gammaS = (Vs1-Vs2)/Vs2 where Vs1 is the fast shear wave velocity, and Vs2
+   * is the slow shear wave velocity. These velocities are not assumed to be
+   * known, but it can be shown that gammaS = (Vp/Vs2-Vp/Vs1)/Vp/Vs1 and these
+   * velocity ratios can be compute from time shifts {@code u1} and {@code u2}.
+   * @param su
+   * @param u1
+   * @param u2
+   * @return
+   */
+  public static float[] gammaS(Sampling sf, float[] u1, float[] u2) {
+    int n1 = u1.length;
+    Check.argument(n1==u2.length,"u1.length==u2.length");
+    float[] vpvs1 = vpvs(sf,u1);
+    float[] vpvs2 = vpvs(sf,u2);
+    float[] gs = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      gs[i1] = vpvs2[i1]/vpvs1[i1]-1.0f;
+    return gs;
+  }
+
+  public static float[][] gammaS(Sampling sf, float[][] u1, float[][] u2) {
+    int n1 = u1[0].length;
+    int n2 = u1.length;
+    float[][] gs = new float[n2][];
+    for (int i2=0; i2<n2; i2++)
+      gs[i2] = gammaS(sf,u1[i2],u2[i2]);
+    return gs;
+  }
+
+  /**
+   * Applies the shifts {@code u} to the trace {@code g}.
+   * @param sf the sampling that {@code g} is being warped to.
+   * @param u the shifts to apply to {@code g}.
+   * @param sg the sampling of {@code g}.
+   * @param g the trace to be warped.
+   * @return the warped trace.
+   */
+  public static float[] applyShifts(
+      Sampling sf, final float[] u,
+      Sampling sg, final float[] g)
+  {
+    final int n1 = u.length;
+    final int ng = g.length;
+    final double dg = sg.getDelta();
+    final double df = sf.getDelta();
+    final double fg = sg.getDelta();
+    final double ff = sf.getDelta();
+    final float[] hf = new float[n1];
+    final SincInterp si = new SincInterp();
+    double v = ff;
+    for (int i1=0; i1<n1; i1++, v=ff+i1*df)
+      hf[i1] = si.interpolate(ng,dg,fg,g,(float)v+u[i1]);
+    return hf;
+  }
+
+  /**
+   * Applies the shifts {@code u} to the trace {@code g}.
+   * @param sf the sampling that {@code g} is being warped to.
+   * @param u the shifts to apply to {@code g}.
+   * @param sg the sampling of {@code g}.
+   * @param g the trace to be warped.
+   * @return the warped image.
+   */
+  public static float[][] applyShifts(
+      Sampling sf, final float[][] u,
+      Sampling sg, final float[][] g)
+  {
+    final int n1 = u[0].length;
+    final int n2 = u.length;
+    final int ng = g[0].length;
+    final double dg = sg.getDelta();
+    final double df = sf.getDelta();
+    final double fg = sg.getDelta();
+    final double ff = sf.getDelta();
+    final float[][] hf = new float[n2][n1];
+    final SincInterp si = new SincInterp();
+    Parallel.loop(n2,new Parallel.LoopInt() {
+    public void compute(int i2) {
+      double v = ff;
+      for (int i1=0; i1<n1; i1++, v=ff+i1*df) {
+        hf[i2][i1] = si.interpolate(ng,dg,fg,g[i2],(float)v+u[i2][i1]);
+      }
+    }});
+    return hf;
+  }
+
+  /**
+   * Applies the shifts {@code u} to the trace {@code g}.
+   * @param sf the sampling that {@code g} is being warped to.
+   * @param u the shifts to apply to {@code g}.
+   * @param sg the sampling of {@code g}.
+   * @param g the trace to be warped.
+   * @return the warped image.
+   */
+  public static float[][][] applyShifts(
+      Sampling sf, final float[][][] u,
+      Sampling sg, final float[][][] g)
+  {
+    final int n1 = u[0][0].length;
+    final int n2 = u[0].length;
+    final int n3 = u.length;
+    final int ng = g[0][0].length;
+    final double dg = sg.getDelta();
+    final double df = sf.getDelta();
+    final double fg = sg.getDelta();
+    final double ff = sf.getDelta();
+    final float[][][] hf = new float[n3][n2][n1];
+    final SincInterp si = new SincInterp();
+    int n23 = n3*n2;
+    Parallel.loop(n23,new Parallel.LoopInt() {
+    public void compute(int i23) {
+      int i2 = i23%n2;
+      int i3 = i23/n2;
+      double v = ff;
+      for (int i1=0; i1<n1; i1++, v=ff+i1*df) {
+        hf[i3][i2][i1] = si.interpolate(
+          ng,dg,fg,g[i3][i2],(float)v+u[i3][i2][i1]);
+      }
+    }});
+    return hf;
+  }
+
+  public static float[] compositeShifts(
+      Sampling sf, float[] u1, float[] u2)
+  {
+    int n1 = u1.length;
+    double ff = sf.getFirst();
+    double df = sf.getDelta();
+    float[] x = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      x[i1] = (float)(ff+i1*df);
+    return compositeShifts(n1,x,u1,u2);
+  }
+
+  public static float[][] compositeShifts(
+      Sampling sf, float[][] u1, float[][] u2)
+  {
+    int n1 = u1[0].length;
+    int n2 = u1.length;
+    double ff = sf.getFirst();
+    double df = sf.getDelta();
+    float[] x = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      x[i1] = (float)(ff+i1*df);
+    float[][] uc = new float[n2][];
+    for (int i2=0; i2<n2; i2++)
+      uc[i2] = compositeShifts(n1,x,u1[i2],u2[i2]);
+    return uc;
+  }
+
+  public static void compress(float c, float[] f) {
+    SincInterp si = new SincInterp();
+    int n1 = f.length;
+    float[] g = new float[n1];
+    scale(si,n1,f,c,g);
+  }
+
+  public static void compress(float c, float[][] f) {
+    SincInterp si = new SincInterp();
+    int n1 = f[0].length;
+    int n2 = f.length;
+    float[] g = new float[n1];
+    for (int i2=0; i2<n2; i2++)
+      scale(si,n1,f[i2],c,g);
+  }
+
+  public static void stretch(float c, float[] f) {
+    SincInterp si = new SincInterp();
+    int n1 = f.length;
+    float[] g = new float[n1];
+    scale(si,n1,f,1.0f/c,g);
+  }
+
+  public static void scale(
+      SincInterp si, int n1, float[] f, float c, float[]g)
+  {
+    si.interpolate(n1,1.0,0.0,f,n1,c,0.0,g);
+    copy(g,f);
+  }
+
+  public static void shear(Sampling sf, float[] f, float c) {
+    int n1 = f.length;
+    for (int i1=0; i1<n1; i1++) {
+      f[i1] = (float)(c*sf.getValue(i1)+f[i1]);
+    }
   }
 
   /**
@@ -214,29 +553,6 @@ public class WarpUtils {
     for (int i1=n1f; i1<n1; i1++)
       ef[i1] = v;
     return ef;
-  }
-
-  public static float[][] applyShifts(
-      Sampling su, final float[][] u,
-      Sampling sg, final float[][] g)
-  {
-    final int n1 = u[0].length;
-    final int n2 = u.length;
-    final int ng = g[0].length;
-    final double dg = sg.getDelta();
-    final double du = su.getDelta();
-    final double fg = sg.getDelta();
-    final double fu = su.getDelta();
-    final float[][] hf = new float[n2][n1];
-    final SincInterp si = new SincInterp();
-    Parallel.loop(n2,new Parallel.LoopInt() {
-    public void compute(int i2) {
-      double v = fu;
-      for (int i1=0; i1<n1; i1++, v=fu+i1*du) {
-        hf[i2][i1] = si.interpolate(ng,dg,fg,g[i2],(float)v+u[i2][i1]);
-      }
-    }});
-    return hf;
   }
 
   /**
@@ -471,6 +787,7 @@ public class WarpUtils {
    * @param e array[n1][nl] of errors.
    * @return transposed array[nl][n1] of errors.
    */
+  @Deprecated
   public static float[][] transposeLag(float[][] e) {
     int nl = e[0].length;
     int n1 = e.length;
@@ -490,64 +807,64 @@ public class WarpUtils {
    * @param e array[n2][n1][nl] of errors.
    * @return transposed array[nl][n2][n1] of errors.
    */
-  public static float[][][] transposeLag(float[][][] e) {
-    int nl = e[0][0].length;
-    int n1 = e[0].length;
-    int n2 = e.length;
-    float[][][] t = new float[nl][n2][n1];
-    for (int il=0; il<nl; ++il) {
-      for (int i2=0; i2<n2; ++i2) {
-        for (int i1=0; i1<n1; ++i1) {
+  @Deprecated
+  public static float[][][] transposeLag(final float[][][] e) {
+    final int nl = e[0][0].length;
+    final int n1 = e[0].length;
+    final int n2 = e.length;
+    final float[][][] t = new float[nl][n2][n1];
+    Parallel.loop(nl,new Parallel.LoopInt() {
+    public void compute(int il) {
+      for (int i2=0; i2<n2; ++i2)
+        for (int i1=0; i1<n1; ++i1)
           t[il][i2][i1] = e[i2][i1][il];
-        }
-      }
-    }
+    }});
     return t;
   }
 
-  public static float[][][] transposeLag12(float[][][] e) {
-    int nl = e[0][0].length;
-    int n1 = e[0].length;
-    int n2 = e.length;
-    float[][][] t = new float[n2][nl][n1];
-    for (int i2=0; i2<n2; ++i2) {
-      for (int il=0; il<nl; ++il) {
-        for (int i1=0; i1<n1; ++i1) {
+  @Deprecated
+  public static float[][][] transposeLag12(final float[][][] e) {
+    final int nl = e[0][0].length;
+    final int n1 = e[0].length;
+    final int n2 = e.length;
+    final float[][][] t = new float[n2][nl][n1];
+    Parallel.loop(n2,new Parallel.LoopInt() {
+    public void compute(int i2) {
+      for (int il=0; il<nl; ++il)
+        for (int i1=0; i1<n1; ++i1)
           t[i2][il][i1] = e[i2][i1][il];
-        }
-      }
-    }
+    }});
     return t;
   }
 
-  public static float[][][] transposeLag23(float[][][] e) {
-    int nl = e[0][0].length;
-    int n1 = e[0].length;
-    int n2 = e.length;
-    float[][][] t = new float[n1][n2][nl];
-    for (int i1=0; i1<n1; ++i1) {
-      for (int i2=0; i2<n2; ++i2) {
+  @Deprecated
+  public static float[][][] transposeLag23(final float[][][] e) {
+    final int nl = e[0][0].length;
+    final int n1 = e[0].length;
+    final int n2 = e.length;
+    final float[][][] t = new float[n1][n2][nl];
+    Parallel.loop(n1,new Parallel.LoopInt() {
+    public void compute(int i1) {
+      for (int i2=0; i2<n2; ++i2)
         t[i1][i2] = e[i2][i1];
-      }
-    }
+    }});
     return t;
   }
 
-  public static float[][][][] transposeLag12(float[][][][] e) {
-    int nl = e[0][0][0].length;
-    int n1 = e[0][0].length;
-    int n2 = e[0].length;
-    int n3 = e.length;
-    float[][][][] t = new float[n3][n2][nl][n1];
-    for (int i3=0; i3<n3; ++i3) {
-      for (int i2=0; i2<n2; ++i2) {
-        for (int il=0; il<nl; ++il) {
-          for (int i1=0; i1<n1; ++i1) {
+  @Deprecated
+  public static float[][][][] transposeLag12(final float[][][][] e) {
+    final int nl = e[0][0][0].length;
+    final int n1 = e[0][0].length;
+    final int n2 = e[0].length;
+    final int n3 = e.length;
+    final float[][][][] t = new float[n3][n2][nl][n1];
+    Parallel.loop(n3,new Parallel.LoopInt() {
+    public void compute(int i3) {
+      for (int i2=0; i2<n2; ++i2)
+        for (int il=0; il<nl; ++il)
+          for (int i1=0; i1<n1; ++i1)
             t[i3][i2][il][i1] = e[i3][i2][i1][il];
-          }
-        }
-      }
-    }
+    }});
     return t;
   }
 
@@ -622,6 +939,16 @@ public class WarpUtils {
         }
       }
     }});
+  }
+
+  private static float[] compositeShifts(
+      int n1, float[] x, float[] u1, float[] u2)
+  {
+    float[] uc = new float[n1];
+    CubicInterpolator ci = new CubicInterpolator(Method.LINEAR,x,u2);
+    for (int i1=0; i1<n1; i1++)
+      uc[i1] = u1[i1]+ci.interpolate(x[i1]+u1[i1]);
+    return uc;
   }
 
   private static void print(String s) {

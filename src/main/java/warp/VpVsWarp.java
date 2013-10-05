@@ -152,4 +152,20 @@ public class VpVsWarp {
     return s;
   }
 
+  public static float[] getWeights(float a, float p, Sampling s) {
+    int n1 = s.getCount();
+    float[] x = new float[n1];
+    x[0] = 0.0f;
+    for (int i1=1; i1<n1; i1++) {
+      double v = s.getValue(i1);
+      if ((v*5.0f)<a) {
+        x[i1] = (float)(pow(v,p)*(3.0f*(pow(5.0f*v/a,2))-2.0f*pow(5.0f*v/a,3)));
+      }
+      else {
+        x[i1] = (float)pow(v,p);
+      }
+    }
+    return x;
+  }
+
 }
