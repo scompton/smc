@@ -151,11 +151,11 @@ public class DynamicWarpingC {
    * Constructs a 1D dynamic warping from PP/PS samplings and a guess of the
    * average Vp/Vs ratio which is used to compute the maximum PP time used
    * for warping. In addition this Factory method computes an initial scale
-	 * factor for compressing the PS data before warping. This compression
-	 * constant effectively reduces the number of time shifts the algorithm
-	 * searches over which can reduce the cost. The {@code vpvsMin} and 
-	 * {@code vpvsMax} are used to design a fairway of potential time shifts
-	 * around the constant slope determined from {@code vpvsAvg}.
+   * factor for compressing the PS data before warping. This compression
+   * constant effectively reduces the number of time shifts the algorithm
+   * searches over which can reduce the cost. The {@code vpvsMin} and 
+   * {@code vpvsMax} are used to design a fairway of potential time shifts
+   * around the constant slope determined from {@code vpvsAvg}.
    * @param sPP the PP sampling.
    * @param sPS the PS sampling.
    * @param vpvsMin
@@ -164,7 +164,7 @@ public class DynamicWarpingC {
    * @param uMin minimum shift between PP and PS. Theoretically, this should
    *   be zero, however this cannot be assumed to be true after processing.
    * @return a DynamicWarpingC instance.
-	 */
+   */
   public static DynamicWarpingC fromVpVs(
       Sampling sPP, Sampling sPS,
       float vpvsMin, float vpvsMax, float vpvsAvg, float uMin)
@@ -176,11 +176,11 @@ public class DynamicWarpingC {
    * Constructs a 2D dynamic warping from PP/PS samplings and a guess of the
    * average Vp/Vs ratio which is used to compute the maximum PP time used
    * for warping. In addition this Factory method computes an initial scale
-	 * factor for compressing the PS data before warping. This compression
-	 * constant effectively reduces the number of time shifts the algorithm
-	 * searches over which can reduce the cost. The {@code vpvsMin} and 
-	 * {@code vpvsMax} are used to design a fairway of potential time shifts
-	 * around the constant slope determined from {@code vpvsAvg}.
+   * factor for compressing the PS data before warping. This compression
+   * constant effectively reduces the number of time shifts the algorithm
+   * searches over which can reduce the cost. The {@code vpvsMin} and 
+   * {@code vpvsMax} are used to design a fairway of potential time shifts
+   * around the constant slope determined from {@code vpvsAvg}.
    * @param sPP the PP sampling.
    * @param sPS the PS sampling.
    * @param s2 second dimension sampling.
@@ -190,7 +190,7 @@ public class DynamicWarpingC {
    * @param uMin minimum shift between PP and PS. Theoretically, this should
    *   be zero, however this cannot be assumed to be true after processing.
    * @return a DynamicWarpingC instance.
-	 */
+   */
   public static DynamicWarpingC fromVpVs(
       Sampling sPP, Sampling sPS, Sampling s2,
       float vpvsMin, float vpvsMax, float vpvsAvg, float uMin)
@@ -202,11 +202,11 @@ public class DynamicWarpingC {
    * Constructs a 3D dynamic warping from PP/PS samplings and a guess of the
    * average Vp/Vs ratio which is used to compute the maximum PP time used
    * for warping. In addition this Factory method computes an initial scale
-	 * factor for compressing the PS data before warping. This compression
-	 * constant effectively reduces the number of time shifts the algorithm
-	 * searches over which can reduce the cost. The {@code vpvsMin} and 
-	 * {@code vpvsMax} are used to design a fairway of potential time shifts
-	 * around the constant slope determined from {@code vpvsAvg}.
+   * factor for compressing the PS data before warping. This compression
+   * constant effectively reduces the number of time shifts the algorithm
+   * searches over which can reduce the cost. The {@code vpvsMin} and 
+   * {@code vpvsMax} are used to design a fairway of potential time shifts
+   * around the constant slope determined from {@code vpvsAvg}.
    * @param sPP the PP sampling.
    * @param sPS the PS sampling.
    * @param s2 second dimension sampling.
@@ -217,7 +217,7 @@ public class DynamicWarpingC {
    * @param uMin minimum shift between PP and PS. Theoretically, this should
    *   be zero, however this cannot be assumed to be true after processing.
    * @return a DynamicWarpingC instance.
-	 */
+   */
   public static DynamicWarpingC fromVpVs(
       Sampling sPP, Sampling sPS, Sampling s2, Sampling s3,
       float vpvsMin, float vpvsMax, float vpvsAvg, float uMin)
@@ -247,7 +247,7 @@ public class DynamicWarpingC {
           "  Warping max time: "+s1.getLast()+"\n"+
           "  Minimum shift:    "+uMin+"\n"+
           "  Maximum shift:    "+uMax+"\n"+
-					"  Scale factor c:   "+c+"\n"+
+          "  Scale factor c:   "+c+"\n"+
           "  Minimum shift c:  "+uMinNew+"\n"+
           "  Maximum shift c:  "+uMaxNew+"\n");
     DynamicWarpingC dw = new DynamicWarpingC(uMinNew,uMaxNew,s1,s2,s3);
@@ -255,19 +255,19 @@ public class DynamicWarpingC {
     return dw;
   }
 
-	/**
-	 * Set the constant scalar used for an initial compression of the PS data.
-	 * If not set, the default value is 1.0f, which has no effect.
-	 * @param c the compreesion constant.
-	 */
+  /**
+   * Set the constant scalar used for an initial compression of the PS data.
+   * If not set, the default value is 1.0f, which has no effect.
+   * @param c the compreesion constant.
+   */
   public void setCompression(float c) {
     _c = c;
   }
 
-	/**
-	 * Get the constant scalar used for an initial compression of the PS data.
-	 * @return the compreesion constant.
-	 */
+  /**
+   * Get the constant scalar used for an initial compression of the PS data.
+   * @return the compreesion constant.
+   */
   public float getCompression() {
     return _c;
   }
@@ -319,8 +319,8 @@ public class DynamicWarpingC {
 
   /**
    * Sets bounds on strains for this dynamic warping. These bounds can vary 
-	 * from sample to sample, but are ultimately only enforced where the bounds
-	 * coincide with coarse samples.
+   * from sample to sample, but are ultimately only enforced where the bounds
+   * coincide with coarse samples.
    * Default lower and upper bounds are -1.0 and 1.0, respectively.
    * @param r1Min lower bound on strain in 1st dimension.
    * @param r1Max upper bound on strain in 1st dimension.
@@ -331,8 +331,8 @@ public class DynamicWarpingC {
 
   /**
    * Sets bounds on strains for this dynamic warping. These bounds can vary 
-	 * from sample to sample in the first dimension, 1, but are ultimately only
-	 * enforced where the bounds coincide with coarse samples.
+   * from sample to sample in the first dimension, 1, but are ultimately only
+   * enforced where the bounds coincide with coarse samples.
    * Default lower and upper bounds are -1.0 and 1.0, respectively.
    * @param r1Min lower bound on strain in 1st dimension.
    * @param r1Max upper bound on strain in 1st dimension.
@@ -348,8 +348,8 @@ public class DynamicWarpingC {
 
   /**
    * Sets bounds on strains for this dynamic warping. These bounds can vary 
-	 * from sample to sample in the first dimension, 1, but are ultimately only
-	 * enforced where the bounds coincide with coarse samples.
+   * from sample to sample in the first dimension, 1, but are ultimately only
+   * enforced where the bounds coincide with coarse samples.
    * Default lower and upper bounds are -1.0 and 1.0, respectively.
    * @param r1Min lower bound on strain in 1st dimension.
    * @param r1Max upper bound on strain in 1st dimension.
@@ -388,36 +388,36 @@ public class DynamicWarpingC {
     _wwt = wwt;
   }
 
-	/**
-	 * Get the shift sampling.
-	 * @return the shift sampling.
-	 */
+  /**
+   * Get the shift sampling.
+   * @return the shift sampling.
+   */
   public Sampling getSamplingU() {
     return _su;
   }
 
-	/**
-	 * Get the sampling for warping in the first (fast) dimension. This can be
-	 * different than the sampling of the input data.
-	 * @return the sampling for warping in the first dimension.
-	 */
+  /**
+   * Get the sampling for warping in the first (fast) dimension. This can be
+   * different than the sampling of the input data.
+   * @return the sampling for warping in the first dimension.
+   */
   public Sampling getSampling1() {
     return _s1;
   }
 
-	/**
-	 * Get the sampling in the second (slowest dimension in 2D, middle in 3D)
-	 * dimension.
-	 * @return the sampling in the second dimension.
-	 */
+  /**
+   * Get the sampling in the second (slowest dimension in 2D, middle in 3D)
+   * dimension.
+   * @return the sampling in the second dimension.
+   */
   public Sampling getSampling2() {
     return _s2;
   }
 
-	/**
-	 * Get the sampling in the third (slowest) dimension.
-	 * @return the sampling in the third dimension.
-	 */
+  /**
+   * Get the sampling in the third (slowest) dimension.
+   * @return the sampling in the third dimension.
+   */
   public Sampling getSampling3() {
     return _s2;
   }
@@ -498,9 +498,9 @@ public class DynamicWarpingC {
    * </p>
    * The sparsely computed shifts are interpolated back to the fine grid such
    * that the returned shifts match the length {@code n1=sf.getCount()}, that 
-	 * is {@code ui[n1]}.
+   * is {@code ui[n1]}.
    * @param sf the PP trace sampling.
-	 * @param e previously computed alignment errors.
+   * @param e previously computed alignment errors.
    * @param g1 array of size [ng1] specifying first dimension sparse grid
    *  coordinates.
    * @return shifts for 1D traces.
@@ -524,7 +524,7 @@ public class DynamicWarpingC {
    * {@code u} are computed on a subsampled grid such that the computed shifts
    * are {@code u[ng2][ng1]}. These lengths match the length of arrays
    * {@code g1,g2} and the coordinates of the subsampled shifts are specified 
-	 * by contents of these arrays.
+   * by contents of these arrays.
    * </p>
    * The sparsely computed shifts are interpolated back to the fine grid such
    * that the returned shifts match the size of the input image, that is
@@ -555,7 +555,7 @@ public class DynamicWarpingC {
    * {@code u} are computed on a subsampled grid such that the computed shifts
    * are {@code u[ng2][ng1]}. These lengths match the length of arrays
    * {@code g1,g2} and the coordinates of the subsampled shifts are specified 
-	 * by contents of these arrays.
+   * by contents of these arrays.
    * </p>
    * The sparsely computed shifts are interpolated back to the fine grid such
    * that the returned shifts match the size of the input image, that is
@@ -568,7 +568,7 @@ public class DynamicWarpingC {
    *  locations for all n2.
    * @param g2 array of size [ng2] specifying second dimension sparse grid
    *  locations.
-	 * @param u1Map
+   * @param u1Map
    * @return shifts for 2D images.
    * @throws CancellationException if a {@link WarperWorkTracker} instance is
    *  set with the {@link #setWorkTracker(WarperWorkTracker)} method, and this
@@ -668,7 +668,7 @@ public class DynamicWarpingC {
       u[i2] = backtrackReverse(dm[0],dm[1]);
       pt.worked();
     }});
-    checkSlopes(u,g1i,r1Min,r1Max);
+    checkSlopes(u,g1i,g2i,r1Min,r1Max);
     // Interpolate shifts to original grid.
     float[][] ui = _ui.interpolate(sf,s2,g1,g2,u);
     pt.worked();
@@ -729,7 +729,7 @@ public class DynamicWarpingC {
    *  locations.
    * @param g3 array of size [ng3] specifying third dimension sparse grid
    *  locations.
-	 * @param u1Map
+   * @param u1Map
    * @return shifts for 3D images.
    * @throws CancellationException if a {@link WarperWorkTracker} instance is
    *  set with the {@link #setWorkTracker(WarperWorkTracker)} method, and this
@@ -851,7 +851,7 @@ public class DynamicWarpingC {
       u[i3][i2] = backtrackReverse(dm[0],dm[1]);
       pt.worked();
     }});
-    checkSlopes(u,g1i,r1Min,r1Max);
+    checkSlopes(u,g1i,g2i,g3i,r1Min,r1Max);
     // Interpolate shifts to original grid.
     float[][][] ui = _ui.interpolate(sf,s2,s3,g1,g2,g3,u);
     pt.worked();
@@ -860,26 +860,7 @@ public class DynamicWarpingC {
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  // research
-
-  public float[][] applyShifts(
-      float[] u1, float[] uS, float[] ps1, float[] ps2)
-  {
-    int n1 = ps1.length;
-    float[] ps1w = new float[n1];
-    float[] ps2w = new float[n1];
-    int nu = u1.length;
-    int num = nu-1;
-    for (int iu=0; iu<nu; ++iu) {
-      ps1w[iu] = _si.interpolate(n1,1.0,0.0,ps1,iu+u1[iu]);
-      ps2w[iu] = _si.interpolate(n1,1.0,0.0,ps2,iu+u1[iu]+uS[iu]);
-    }
-    for (int i1=nu; i1<n1; ++i1) {
-      ps1w[i1] = _si.interpolate(n1,1.0,0.0,ps1,i1+u1[num]);
-      ps2w[i1] = _si.interpolate(n1,1.0,0.0,ps2,i1+u1[num]+uS[num]);
-    }
-    return new float[][]{ps1w, ps2w};
-  }
+  // These methods should typically only be called for research applications
 
   public float[][] computeErrors(
       Sampling sf, float[] f,
@@ -900,24 +881,12 @@ public class DynamicWarpingC {
     float[][] e = new float[ne][nu];
     float[] fi = new float[ne];
     float[] gi = new float[ne];
-    computeErrors(nf,df,ff,f,fi,
-                  ng,dg,fg,g,gi,
-                  ne,de,fe,e,nu,su.getValues());
+    computeErrors(
+      nf,df,ff,f,fi,
+      ng,dg,fg,g,gi,
+      ne,de,fe,e,
+      nu,su.getValues());
     return e;
-  }
-
-  public void computeErrors(
-      int nf, double df, double ff, float[] f, float[] fi,
-      int ng, double dg, double fg, float[] g, float[] gi,
-      int ne, double de, double fe, float[][] e,
-      int nu, double[] uv)
-  {
-    _si.interpolate(nf,df,ff,f,ne,de,fe,fi);
-    for (int iu=0; iu<nu; iu++) {
-      _si.interpolate(ng,dg,fg,g,ne,de,fe+uv[iu],gi);
-      for (int ie=0; ie<ne; ie++)
-        e[ie][iu] = error(fi[ie],gi[ie]);
-    }
   }
 
   /**
@@ -1082,6 +1051,7 @@ public class DynamicWarpingC {
   private SincInterp _si; // for warping with non-integer shifts
   private ShiftInterp _ui;
   private WarperWorkTracker _wwt;
+  private Almost a = new Almost();
 
   private static final float BYTES_TO_MB = 1.0f/1000000.0f;
 
@@ -1174,23 +1144,22 @@ public class DynamicWarpingC {
   }
 
   private void checkSlopes(
-      float[][][] u, int[][][] g1, double[] r1Min, double[] r1Max)
+      float[][][] u, int[][][] g1, int[] g2, int[] g3,
+      double[] r1Min, double[] r1Max)
   {
-    int n2 = u[0].length;
     int n3 = u.length;
     for (int i3=0; i3<n3; i3++) {
       print("checking i3 "+i3);
-      for (int i2=0; i2<n2; i2++)
-        checkSlopes(u[i3][i2],g1[i3][i2],r1Min,r1Max);
+      checkSlopes(u[i3],g1[g3[i3]],g2,r1Min,r1Max);
     }
   }
 
   private void checkSlopes(
-      float[][] u, int[][] g1, double[] r1Min, double[] r1Max)
+      float[][] u, int[][] g1, int[] g2, double[] r1Min, double[] r1Max)
   {
     int n2 = u.length;
     for (int i2=0; i2<n2; i2++)
-      checkSlopes(u[i2],g1[i2],r1Min,r1Max);
+      checkSlopes(u[i2],g1[g2[i2]],r1Min,r1Max);
   }
 
   private void checkSlopes(
@@ -1206,13 +1175,81 @@ public class DynamicWarpingC {
       float n = (int)((u[ig]-u[igm1])*dui+0.5f); // numerator
       float d = ii-ji; // denominator
       float r = n/d; // slope
-      // assert (r>=r1Min[ii] && r<=r1Max[ii]) || u[ig]==uLast :
-      //   "n="+n+", d="+d+", r="+r+", u[ig]="+u[ig]+", u[ig-1]"+u[igm1];
-      if ((r<r1Min[ii] || r>r1Max[ii]) && u[ig]!=uLast)
-        print(
-          "WARNING Slope constraints violated:\n"+
-          "  n="+n+", d="+d+", r="+r+", rmin="+r1Min[ii]+", rmax="+r1Max[ii]+
-          ", u[ig]="+u[ig]+", u[ig-1]"+u[igm1]+", uLast="+uLast);
+      assert (a.ge(r,r1Min[ii]) && a.le(r,r1Max[ii])) || u[ig]==uLast :
+        "Slope constraints violated:\n"+
+        "  n="+n+", d="+d+", r="+r+",\n"+
+        "  rmin="+r1Min[ii]+", rmax="+r1Max[ii]+",\n"+
+        "  u["+ig+"]="+u[ig]+", u["+igm1+"]="+u[igm1]+", uLast="+uLast+"\n"+
+        "  g1["+ig+"]="+ii+", g1["+ig+"]="+ji;
+     //if (a.lt(r,r1Min[ii]) || a.gt(r,r1Max[ii]) && u[ig]!=uLast)
+      //  print(
+      //    "WARNING Slope constraints violated:\n"+
+      //    "  n="+n+", d="+d+", r="+r+",\n"+
+      //    "  rmin="+r1Min[ii]+", rmax="+r1Max[ii]+",\n"+
+      //    "  u["+ig+"]="+u[ig]+", u["+igm1+"]="+u[igm1]+", uLast="+uLast+"\n"+
+      //    "  g1["+ig+"]="+ii+", g1["+ig+"]="+ji);
+    }
+  }
+
+  private void computeErrors(
+      int nf, double df, double ff, float[] f, float[] fi,
+      int ng, double dg, double fg, float[] g, float[] gi,
+      int ne, double de, double fe, float[][] e,
+      int nu, double[] uv)
+  {
+    double lg = (ng-1)*dg;
+    _si.interpolate(nf,df,ff,f,ne,de,fe,fi);
+    for (int iu=0; iu<nu; iu++) {
+      double u = uv[iu];
+      _si.interpolate(ng,dg,fg,g,ne,de,fe+u,gi);
+      for (int ie=0; ie<ne; ie++) {
+        double gv = fe+ie*de+u;
+        e[ie][iu] = (gv<fg || gv>lg) ? Float.NaN : error(fi[ie],gi[ie]);
+      }
+    }
+    reflectErrors(e);
+  }
+
+  /**
+   * Replaces NaNs from out-of-bounds errors with reflected error values.
+   * @param e alignment errors.
+   */
+  private void reflectErrors(float[][] e) {
+    reflect(e, 1);
+    reflect(e,-1);
+  }
+
+  /**
+   * Replaces NaNs from out-of-bounds errors with reflected error values.
+   * This method checks out-of-bounds errors from one direction given by the
+   * {@code dir} argument. In the forward direction ({@code dir>0}) NaNs
+   * are removed in the direction of increasing shifts. In the reverse
+   * direction ({@code dir<0}) NaNs are removed in the direction of decreasing
+   * shifts. The method terminates when the first or last value is not a NaN.
+   * @param e alignment errors.
+   * @param dir {@code >0} forward direction, {@code <0} reverse direction.
+   */
+  private void reflect(float[][] e, int dir) {
+    int nu = e[0].length;
+    int ne = e.length;
+    int ieb = dir>0 ?  0 : ne-1; // beginning error index
+    int iub = dir>0 ?  0 : nu-1; // beginning shift index
+    int iee = dir>0 ? ne :   -1; // end error index
+    int iue = dir>0 ? nu :   -1; // end shift index
+    int ire = dir>0 ? -1 :   nu; // end shift reflected index
+    int s   = dir>0 ?  1 :   -1; // stride
+    for (int ie=ieb; ie!=iee; ie+=s) {
+      if (Float.isNaN(e[ie][iub])) {
+        int iu = iub+s;
+        while (iu!=iue && Float.isNaN(e[ie][iu])) iu += s;
+        int ir = iu-s; // reflected index, is 1 sample back/forward.
+        for (iu+=s; iu!=iue && ir!=ire; iu+=s, ir-=s)
+          e[ie][ir] = e[ie][iu];
+        for (; ir!=ire; ir-=s) // extrapolate where we couldn't reflect
+          e[ie][ir] = e[ie][ir+s];
+      } else {
+        break;
+      }
     }
   }
 
