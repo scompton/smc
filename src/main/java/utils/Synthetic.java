@@ -1,10 +1,11 @@
 package utils;
 
+import java.awt.Color;
 import java.util.Random;
 import javax.swing.SwingUtilities;
 
 import edu.mines.jtk.dsp.*;
-import edu.mines.jtk.mosaic.SimplePlot;
+import edu.mines.jtk.mosaic.*;
 
 import static edu.mines.jtk.util.ArrayMath.*;
 
@@ -38,7 +39,8 @@ public class Synthetic {
   }
 
   /**
-   * Adds a ricker wavelet with specified peak frequency to array <code>f</code>.
+   * Adds a ricker wavelet with specified peak frequency to 
+   * array <code>f</code>.
    * @param fpeak peak frequency in Cycles/Sample.
    * @param f array of impulse responses.
    * @return an array of random impulse responses convolved with a ricker
@@ -64,7 +66,15 @@ public class Synthetic {
     SwingUtilities.invokeLater(new Runnable() {
       @Override
       public void run() {
-        SimplePlot.asPoints(s,f);
+        //SimplePlot.asPoints(s,f);
+        PlotPanel pp = new PlotPanel();
+        pp.addGrid();
+        PointsView pv = pp.addPoints(s,f);
+        pv.setStyle("r-");
+        PlotFrame pf = new PlotFrame(pp);
+        pf.setBackground(Color.BLACK);
+        pf.setForeground(Color.WHITE);
+        pf.setVisible(true);
       }
     });
   }
