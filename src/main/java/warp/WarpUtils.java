@@ -232,18 +232,12 @@ public class WarpUtils {
       Sampling s1, float[] u1, Sampling sS, float[] uS)
   {
     int n1 = u1.length;
-    int nS = uS.length;
-    double f1 = s1.getFirst();
-    double fS = sS.getFirst();
-    double d1 = s1.getDelta();
-    double dS = sS.getDelta();
-    float[] xS = new float[nS];
-    for (int iS=0; iS<nS; iS++)
-      xS[iS] = (float)(fS+iS*dS);
-    CubicInterpolator ci = new CubicInterpolator(Method.LINEAR,xS,uS);
+    float[] x1 = getValues(s1);
+    CubicInterpolator ci =
+      new CubicInterpolator(Method.LINEAR,getValues(sS),uS);
     float[] u2 = new float[n1];
     for (int i1=0; i1<n1; i1++)
-      u2[i1] = u1[i1]+ci.interpolate((float)(f1+i1*d1)+u1[i1]);
+      u2[i1] = u1[i1]+ci.interpolate(x1[i1]+u1[i1]);
     return u2;
   }
 
@@ -290,50 +284,8 @@ public class WarpUtils {
   }
 
   /**
-   * Computes an array of VpVs ratios an array of shifts u. The relationship is
-   * defined as vpvs(t) = 1+2*(du/dt).
-   * @param u the shifts.
-   * @return computed interval Vp/Vs values.
-   */
-  public static float[] vpvs(Sampling su, float[] u) {
-    return vpvs(su,u,1.0f);
-  }
-
-  public static float[] vpvs(Sampling su, float[] u, float c) {
-    float dui = 1.0f/(float)su.getDelta();
-    int n = u.length;
-    int nm1 = n-1;
-    float twoC = 2.0f*c;
-    float twoCm1 = twoC-1.0f;
-    float[] vpvs = new float[n];
-    vpvs[ 0 ] = twoCm1 + twoC*(u[ 1 ]-u[  0  ])*dui; // forward diff
-    vpvs[nm1] = twoCm1 + twoC*(u[nm1]-u[nm1-1])*dui; // backward diff
-    for (int i1=1; i1<nm1; i1++)
-      vpvs[i1] = twoCm1 + c*(u[i1+1]-u[i1-1])*dui; // 2s cancel
-    return vpvs;
-  }
-
-  /**
-   * Computes an array of VpVs ratios an array of shifts u. The relationship is
-   * defined as vpvs(t) = 1+2*(du/dt).
-   * @param u the shifts.
-   * @return computed interval Vp/Vs values.
-   */
-  public static float[][] vpvs(Sampling su, float[][] u) {
-    return vpvs(su,u,1.0f);
-  }
-
-  public static float[][] vpvs(Sampling su, float[][] u, float c) {
-    int n2 = u.length;
-    float[][] vpvs = new float[n2][];
-    for (int i2=0; i2<n2; i2++)
-      vpvs[i2] = vpvs(su,u[i2],c);
-    return vpvs;
-  }
-
-  /**
-   * Computes an array of VpVs ratios an array of shifts u. The relationship is
-   * defined as vpvs(t) = 1+2*(du/dt).
+   * Computes an array of VpVs ratios an array of shifts u. This relationship
+   * is defined as vpvs(t) = 1+2*(du/dt).
    * @param u the shifts.
    * @return computed interval Vp/Vs values.
    */
@@ -341,6 +293,13 @@ public class WarpUtils {
     return vpvs(su,u,1.0f);
   }
 
+  /**
+   * Computes an array of VpVs ratios an array of shifts u. This relationship
+   * is defined as vpvs(t) = 1+2*(du/dt).
+   * @param u the shifts.
+   * @param c the initial scale factor applied.
+   * @return computed interval Vp/Vs values.
+   */
   public static float[][][] vpvs(Sampling su, float[][][] u, float c) {
     int n3 = u.length;
     float[][][] vpvs = new float[n3][][];
@@ -350,33 +309,115 @@ public class WarpUtils {
   }
 
   /**
-   * Computes gammaS, a measure of the time delay between two split shear waves.
-   * gammaS = (Vs1-Vs2)/Vs2 where Vs1 is the fast shear wave velocity, and Vs2
-   * is the slow shear wave velocity. These velocities are not assumed to be
-   * known, but it can be shown that gammaS = (Vp/Vs2-Vp/Vs1)/Vp/Vs1 and these
-   * velocity ratios can be compute from time shifts {@code u1} and {@code u2}.
-   * @param su
-   * @param u1
-   * @param u2
-   * @return
+   * Computes an array of VpVs ratios an array of shifts u. This relationship
+   * is defined as vpvs(t) = 1+2*(du/dt).
+   * @param u the shifts.
+   * @return computed interval Vp/Vs values.
    */
-  public static float[] gammaS(Sampling sf, float[] u1, float[] u2) {
+  public static float[][] vpvs(Sampling su, float[][] u) {
+    return vpvs(su,u,1.0f);
+  }
+
+  /**
+   * Computes an array of VpVs ratios an array of shifts u. This relationship
+   * is defined as vpvs(t) = 1+2*(du/dt).
+   * @param u the shifts.
+   * @param c the initial scale factor applied.
+   * @return computed interval Vp/Vs values.
+   */
+  public static float[][] vpvs(Sampling su, float[][] u, float c) {
+    int n2 = u.length;
+    float[][] vpvs = new float[n2][];
+    for (int i2=0; i2<n2; i2++)
+      vpvs[i2] = vpvs(su,u[i2],c);
+    return vpvs;
+  }
+
+  /**
+   * Computes an array of VpVs ratios an array of shifts u. This relationship
+   * is defined as vpvs(t) = 1+2*(du/dt).
+   * @param u the shifts.
+   * @return computed interval Vp/Vs values.
+   */
+  public static float[] vpvs(Sampling su, float[] u) {
+    return vpvs(su,u,1.0f);
+  }
+
+  /**
+   * Computes an array of VpVs ratios an array of shifts u. This relationship
+   * is defined as vpvs(t) = 1+2*(du/dt).
+   * @param u the shifts.
+   * @param c the initial scale factor applied.
+   * @return computed interval Vp/Vs values.
+   */
+  public static float[] vpvs(Sampling su, float[] u, float c) {
+    int n = u.length;
+    float twoC = 2.0f*c;
+    float twoCm1 = twoC-1.0f;
+    float[] vpvs = new float[n];
+    float[] du = firstDerivative(su,u);
+    for (int i1=0; i1<n; i1++)
+      vpvs[i1] = twoCm1 + twoC*du[i1];
+    return vpvs;
+  }
+
+  /**
+   * Computes gammaS, a measure of the time delay between two split shear 
+   * waves, from shifts between PP-PS1 {@code u1} and PP-PS2 {@code u2}.
+   * @param sf PP time Sampling.
+   * @param u1 shifts between PP-PS1 in PP time.
+   * @param u2 shifts between PP-PS2 in PP time.
+   * @return gammaS
+   */
+  public static float[] gammaSu12(Sampling sf, float[] u1, float[] u2) {
     int n1 = u1.length;
+    Check.argument(n1==sf.getCount(),"u1 consistent with sampling");
     Check.argument(n1==u2.length,"u1.length==u2.length");
-    float[] vpvs1 = vpvs(sf,u1);
-    float[] vpvs2 = vpvs(sf,u2);
+    float[] du1 = firstDerivative(sf,u1);
+    float[] du2 = firstDerivative(sf,u2);
     float[] gs = new float[n1];
     for (int i1=0; i1<n1; i1++)
-      gs[i1] = vpvs2[i1]/vpvs1[i1]-1.0f;
+      gs[i1] = (2.0f*(du2[i1]-du1[i1])) / (1.0f+2.0f*du1[i1]);
     return gs;
   }
 
-  public static float[][] gammaS(Sampling sf, float[][] u1, float[][] u2) {
-    int n1 = u1[0].length;
-    int n2 = u1.length;
-    float[][] gs = new float[n2][];
-    for (int i2=0; i2<n2; i2++)
-      gs[i2] = gammaS(sf,u1[i2],u2[i2]);
+  /**
+   * Computes gammaS, a measure of the time delay between two split shear 
+   * waves, from shifts between PP-PS1 {@code u1} and PS1-PS2 {@code uS}.
+   * @param sf PP time Sampling.
+   * @param u1 shifts between PP-PS1 in PP time.
+   * @param uS shifts between PS1-PS2 in PP time.
+   * @return gammaS
+   */
+  public static float[] gammaSu1S(Sampling sf, float[] u1, float[] uS) {
+    int n1 = u1.length;
+    Check.argument(n1==sf.getCount(),"u1 consistent with sampling");
+    Check.argument(n1==uS.length,"u1.length==uS.length");
+    float[] du1 = firstDerivative(sf,u1);
+    float[] duS = firstDerivative(sf,uS);
+    float[] gs = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      gs[i1] = (2.0f*duS[i1]) / (1.0f+2.0f*du1[i1]);
+    return gs;
+  }
+
+  /**
+   * Computes gammaS, a measure of the time delay between two split shear 
+   * waves, from shifts between PP-PS2 {@code u2} and PS1-PS2 {@code uS}.
+   * @param sf PP time Sampling.
+   * @param u2 shifts between PP-PS2 in PP time.
+   * @param uS shifts between PS1-PS2 in PP time.
+   * @return gammaS
+   */
+  public static float[] gammaSu2S(Sampling sf, float[] u2, float[] uS) {
+    int n1 = u2.length;
+    Check.argument(n1==sf.getCount(),"u2 consistent with sampling");
+    Check.argument(n1==uS.length,"u2.length==uS.length");
+    float[] du2 = firstDerivative(sf,u2);
+    float[] duS = firstDerivative(sf,uS);
+    float[] gs = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      gs[i1] = (2.0f*duS[i1]) / (1.0f+2.0f*(du2[i1]-duS[i1]));
     return gs;
   }
 
@@ -473,32 +514,24 @@ public class WarpUtils {
     return hf;
   }
 
+  public static float[][] compositeShifts(
+      final Sampling sf, final float[][] u1, final float[][] u2)
+  {
+    int n2 = u1.length;
+    final float[][] uc = new float[n2][];
+    Parallel.loop(n2,new Parallel.LoopInt() {
+    public void compute(int i2) {
+      uc[i2] = compositeShifts(sf,u1[i2],u2[i2]);
+    }});
+    return uc;
+  }
+
   public static float[] compositeShifts(
       Sampling sf, float[] u1, float[] u2)
   {
     int n1 = u1.length;
-    double ff = sf.getFirst();
-    double df = sf.getDelta();
-    float[] x = new float[n1];
-    for (int i1=0; i1<n1; i1++)
-      x[i1] = (float)(ff+i1*df);
+    float[] x = getValues(sf);
     return compositeShifts(n1,x,u1,u2);
-  }
-
-  public static float[][] compositeShifts(
-      Sampling sf, float[][] u1, float[][] u2)
-  {
-    int n1 = u1[0].length;
-    int n2 = u1.length;
-    double ff = sf.getFirst();
-    double df = sf.getDelta();
-    float[] x = new float[n1];
-    for (int i1=0; i1<n1; i1++)
-      x[i1] = (float)(ff+i1*df);
-    float[][] uc = new float[n2][];
-    for (int i2=0; i2<n2; i2++)
-      uc[i2] = compositeShifts(n1,x,u1[i2],u2[i2]);
-    return uc;
   }
 
   public static void compress(float c, float[] f) {
@@ -531,11 +564,72 @@ public class WarpUtils {
     copy(g,f);
   }
 
-  public static void shear(Sampling sf, float[] f, float c) {
-    int n1 = f.length;
-    for (int i1=0; i1<n1; i1++) {
-      f[i1] = (float)(c*sf.getValue(i1)+f[i1]);
+  /**
+   * Scale shifts by compression factor c.
+   * @param sf the trace sampling corresponding to shifts.
+   * @param u array of shifts to compress.
+   * @param c scale factor. To stretch, c, to compress, 1/c.
+   * @return scaled shifts.
+   */
+  public static float[] getScaledShifts(Sampling sf, float[] u, float c) {
+    int n = u.length;
+    float[] uc = new float[n];
+    for (int i=0; i<n; i++) {
+      float fv = (float)sf.getValue(i);
+      uc[i] = (fv+u[i])*c-fv;
     }
+    return uc;
+  }
+
+  //public static float[] interpUS(Sampling sf, float[] u1, float[] ust) {
+  //  int n1 = ust.length;
+  //  float[] us = new float[n1];
+  //  float[] x = getValues(sf);
+  //  CubicInterpolator ci = new CubicInterpolator(Method.MONOTONIC,x,ust);
+  //  for (int i1=0; i1<n1; i1++)
+  //    us[i1] = ci.interpolate(x[i1]+u1[i1]);
+  //  return us;
+  //}
+
+  public static float[] interpUS(Sampling sf, float[] u1, float[] ust) {
+    int n1 = ust.length;
+    float[] us = new float[n1];
+    float[] xf = getValues(sf);
+    float[] xu = new float[n1];
+    for (int i1=0; i1<n1; i1++)
+      xu[i1] = xf[i1]+u1[i1];
+    CubicInterpolator ci = new CubicInterpolator(Method.MONOTONIC,xu,ust);
+    for (int i1=0; i1<n1; i1++)
+      us[i1] = ci.interpolate(xf[i1]);
+    return us;
+  }
+
+  public static double[] getSubStrainMin(
+      Sampling su, float[] u, double[] rmin)
+  {
+    float dui = 1.0f/(float)su.getDelta();
+    int n = u.length;
+    int nm1 = n-1;
+    double[] rminNew = new double[n];
+    rminNew[ 0 ] = rmin[ 0 ]-(u[ 1 ]-u[  0  ])*dui; // forward diff
+    rminNew[nm1] = rmin[nm1]-(u[nm1]-u[nm1-1])*dui; // backward diff
+    for (int i1=1; i1<nm1; i1++)
+      rminNew[i1] = rmin[i1]-(u[i1+1]-u[i1-1])*0.5*dui;
+    return rminNew;
+  }
+
+  public static double[] getSubStrainMax(
+      Sampling su, float[] u, double[] rmax)
+  {
+    float dui = 1.0f/(float)su.getDelta();
+    int n = u.length;
+    int nm1 = n-1;
+    double[] rmaxNew = new double[n];
+    rmaxNew[ 0 ] = rmax[ 0 ]-(u[ 1 ]-u[  0  ])*dui; // forward diff
+    rmaxNew[nm1] = rmax[nm1]-(u[nm1]-u[nm1-1])*dui; // backward diff
+    for (int i1=1; i1<nm1; i1++)
+      rmaxNew[i1] = rmax[i1]-(u[i1+1]-u[i1-1])*0.5*dui;
+    return rmaxNew;
   }
 
   /**
@@ -752,8 +846,8 @@ public class WarpUtils {
     Parallel.loop(n2,new Parallel.LoopInt() {
     public void compute(int i2) {
       for (int i1=0; i1<n1; ++i1) {
-	float vi = ff[i2][i1];
-	ff[i2][i1] = nrange*(vi-vmin)/range + nmin;
+        float vi = ff[i2][i1];
+        ff[i2][i1] = nrange*(vi-vmin)/range + nmin;
       }
     }});
   }
@@ -949,6 +1043,29 @@ public class WarpUtils {
     for (int i1=0; i1<n1; i1++)
       uc[i1] = u1[i1]+ci.interpolate(x[i1]+u1[i1]);
     return uc;
+  }
+
+  private static float[] getValues(Sampling s) {
+    int n = s.getCount();
+    double f = s.getFirst();
+    double d = s.getDelta();
+    float[] x = new float[n];
+    for (int i=0; i<n; i++)
+      x[i] = (float)(f+i*d);
+    return x;
+  }
+
+  private static float[] firstDerivative(Sampling s, float[] f) {
+    int n = f.length;
+    int nm1 = n-1;
+    float[] g = new float[n];
+    float di = 1.0f/(float)s.getDelta();
+    float di2 = 0.5f*di;
+    g[ 0 ] = (f[ 1 ]-f[  0  ])*di; // forward diff
+    g[nm1] = (f[nm1]-f[nm1-1])*di; // backward diff
+    for (int i1=1; i1<nm1; i1++)
+      g[i1] = (f[i1+1]-f[i1-1])*di2;
+    return g;
   }
 
   private static void print(String s) {

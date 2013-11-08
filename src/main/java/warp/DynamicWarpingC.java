@@ -71,7 +71,7 @@ public class DynamicWarpingC {
     _r3Max =  1.0;
     _c = 1.0f; // Set default compression to do nothing
     _si = new SincInterp();
-    // _si.setExtrapolation(Extrapolation.CONSTANT);
+    //_si.setExtrapolation(Extrapolation.CONSTANT);
     _si.setExtrapolation(Extrapolation.ZERO);
     _ui = new ShiftInterp();
     _ui.setMethod(ShiftInterp.Method.LINEAR);
@@ -233,9 +233,9 @@ public class DynamicWarpingC {
     float r = du/dPP; // slope from first time & shift to last time & shift
     float rMin = (vpvsMin-1.0f)*0.5f;
     float rMax = (vpvsMax-1.0f)*0.5f;
-    float uMinNew = (float)((dPP*tan(atan(rMin)))-du);
-    float uMaxNew = (float)((dPP*tan(atan(rMax)))-du);
-    print("r="+r+", rMin="+rMin+", rMax="+rMax);
+    float uMinNew = (float)(dPP*rMin-du);
+    float uMaxNew = (float)(dPP*rMax-du);
+    //print("r="+r+", rMin="+rMin+", rMax="+rMax);
     float g = 2.0f*r+1.0f; // constant Vp/Vs
     float c = (g+1.0f)*0.5f; // compression constant
     Check.argument(uMax>0,"uMax>0");
@@ -419,7 +419,7 @@ public class DynamicWarpingC {
    * @return the sampling in the third dimension.
    */
   public Sampling getSampling3() {
-    return _s2;
+    return _s3;
   }
 
   /**
@@ -669,6 +669,7 @@ public class DynamicWarpingC {
       pt.worked();
     }});
     checkSlopes(u,g1i,g2i,r1Min,r1Max);
+
     // Interpolate shifts to original grid.
     float[][] ui = _ui.interpolate(sf,s2,g1,g2,u);
     pt.worked();
@@ -852,6 +853,7 @@ public class DynamicWarpingC {
       pt.worked();
     }});
     checkSlopes(u,g1i,g2i,g3i,r1Min,r1Max);
+
     // Interpolate shifts to original grid.
     float[][][] ui = _ui.interpolate(sf,s2,s3,g1,g2,g3,u);
     pt.worked();
@@ -859,9 +861,10 @@ public class DynamicWarpingC {
     return ui;
   }
 
-  ///////////////////////////////////////////////////////////////////////////
-  // These methods should typically only be called for research applications
-
+  /**
+   * Computes alignment errors for traces {@code f} and {@code g}.
+   * @return 2D array of alignment errors.
+   */
   public float[][] computeErrors(
       Sampling sf, float[] f,
       Sampling sg, float[] g)
@@ -888,6 +891,39 @@ public class DynamicWarpingC {
       nu,su.getValues());
     return e;
   }
+
+  /**
+   * Returns smooth alignment errors on the sparse grid defined
+   * by the indices of g.
+   * @param e 2D array of alignment errors.
+   * @param rmin minimum slope.
+   * @param rmax maximum slope.
+   * @param g sparse grid indices.
+   * @return smoothed alignment errors with size
+   *  [g.length][e[0].length].
+   */
+  public static float[][] smoothErrors(
+      float[][] e, double[] rmin, double[] rmax, int[] g)
+  {
+    int ng = g.length;
+    int nel = e[0].length;
+    float[][] ef = new float[ng][nel];
+    float[][] er = new float[ng][nel];
+    float[][] es = new float[ng][nel];
+    accumulateSparse( 1,rmin,rmax,g,e,ef,null);
+    accumulateSparse(-1,rmin,rmax,g,e,er,null);
+    float scale = 1.0f/e.length;
+    for (int i1=0; i1<ng; i1++) {
+      for (int il=0; il<nel; il++) {
+        float v = scale*(ef[i1][il]+er[i1][il]-e[g[i1]][il]);
+        es[i1][il] = Float.isInfinite(v) ? Float.MAX_VALUE : v;
+      }
+    }
+    return es;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  // These methods should typically only be called for research applications
 
   /**
    * Compute alignment errors for 2D traces.
@@ -947,6 +983,26 @@ public class DynamicWarpingC {
       return add(ea,eb);
     }});
     return e;
+  }
+
+  public float[][][] getSmoothErrors(float[][] e, int[] g, int n1) {
+    int ng = g.length;
+    int nel = e[0].length;
+    float[][] ef = new float[ng][nel];
+    float[][] er = new float[ng][nel];
+    float[][] es = new float[ng][nel];
+    double[] r1Min = getR1Min(_s1.getCount());
+    double[] r1Max = getR1Max(_s1.getCount());
+    accumulateSparse( 1,r1Min,r1Max,g,e,ef,null);
+    accumulateSparse(-1,r1Min,r1Max,g,e,er,null);
+    float scale = 1.0f/e.length;
+    for (int i1=0; i1<ng; i1++) {
+      for (int il=0; il<nel; il++) {
+        float v = scale*(ef[i1][il]+er[i1][il]-e[g[i1]][il]);
+        es[i1][il] = Float.isInfinite(v) ? Float.MAX_VALUE : v;
+      }
+    }
+    return new float[][][] {ef,er,es};
   }
 
   public void fixShifts(float[][][] e, Map<Integer,int[]> l1Map) {
@@ -1017,22 +1073,6 @@ public class DynamicWarpingC {
     // backtrack(1,_sl1,d,m,u);
     backtrack(1,_su,d,m,u);
     return u;
-  }
-
-  public static float[][][] shiftVolume(
-      float[] u1, float[] uS, int fr, float[][][] e) {
-    int n1 = e.length;
-    int nl1 = e[0].length;
-    int nlS = e[0][0].length;
-    Check.argument(n1==u1.length, "n1==u1.length");
-    Check.argument(n1==uS.length, "n1==uS.length");
-    float[][][] sv = zerofloat(nlS,nl1,n1);
-    for (int i1=0; i1<n1; ++i1) {
-      int il1 = (int)u1[i1];
-      int ilS = (int)uS[i1]*fr;
-      sv[i1][il1][ilS] = 1.0f;
-    }
-    return sv;
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -1181,13 +1221,6 @@ public class DynamicWarpingC {
         "  rmin="+r1Min[ii]+", rmax="+r1Max[ii]+",\n"+
         "  u["+ig+"]="+u[ig]+", u["+igm1+"]="+u[igm1]+", uLast="+uLast+"\n"+
         "  g1["+ig+"]="+ii+", g1["+ig+"]="+ji;
-     //if (a.lt(r,r1Min[ii]) || a.gt(r,r1Max[ii]) && u[ig]!=uLast)
-      //  print(
-      //    "WARNING Slope constraints violated:\n"+
-      //    "  n="+n+", d="+d+", r="+r+",\n"+
-      //    "  rmin="+r1Min[ii]+", rmax="+r1Max[ii]+",\n"+
-      //    "  u["+ig+"]="+u[ig]+", u["+igm1+"]="+u[igm1]+", uLast="+uLast+"\n"+
-      //    "  g1["+ig+"]="+ii+", g1["+ig+"]="+ji);
     }
   }
 
@@ -1305,56 +1338,6 @@ public class DynamicWarpingC {
 
   private float error(float f, float g) {
     return pow(abs(f-g),_epow);
-  }
-
-  /**
-   * Returns smooth alignment errors on the sparse grid defined
-   * by the indices of g.
-   * @param e 2D array of alignment errors.
-   * @param rmin minimum slope.
-   * @param rmax maximum slope.
-   * @param g sparse grid indices.
-   * @return smoothed alignment errors with size
-   *  [g.length][e[0].length].
-   */
-  public static float[][] smoothErrors(
-      float[][] e, double[] rmin, double[] rmax, int[] g)
-  {
-    int ng = g.length;
-    int nel = e[0].length;
-    float[][] ef = new float[ng][nel];
-    float[][] er = new float[ng][nel];
-    float[][] es = new float[ng][nel];
-    accumulateSparse( 1,rmin,rmax,g,e,ef,null);
-    accumulateSparse(-1,rmin,rmax,g,e,er,null);
-    float scale = 1.0f/e.length;
-    for (int i1=0; i1<ng; i1++) {
-      for (int il=0; il<nel; il++) {
-        float v = scale*(ef[i1][il]+er[i1][il]-e[g[i1]][il]);
-        es[i1][il] = Float.isInfinite(v) ? Float.MAX_VALUE : v;
-      }
-    }
-    return es;
-  }
-
-  public float[][][] getSmoothErrors(float[][] e, int[] g, int n1) {
-    int ng = g.length;
-    int nel = e[0].length;
-    float[][] ef = new float[ng][nel];
-    float[][] er = new float[ng][nel];
-    float[][] es = new float[ng][nel];
-    double[] r1Min = getR1Min(_s1.getCount());
-    double[] r1Max = getR1Max(_s1.getCount());
-    accumulateSparse( 1,r1Min,r1Max,g,e,ef,null);
-    accumulateSparse(-1,r1Min,r1Max,g,e,er,null);
-    float scale = 1.0f/e.length;
-    for (int i1=0; i1<ng; i1++) {
-      for (int il=0; il<nel; il++) {
-        float v = scale*(ef[i1][il]+er[i1][il]-e[g[i1]][il]);
-        es[i1][il] = Float.isInfinite(v) ? Float.MAX_VALUE : v;
-      }
-    }
-    return new float[][][] {ef,er,es};
   }
 
   /**
@@ -1513,17 +1496,8 @@ public class DynamicWarpingC {
           for (int x=je+is; x!=ie; x+=is)
             for (int il=ils; il<ile; il++)
               dm[il] += e[x][il];
-        } else { // linearly interpolate
-          for (int x=je+is; x!=ie; x+=is) {
-            float ky = r*(ie-x);
-            int k1 = (int)ky;
-            if (ky<0.0f) --k1;
-            int k2 = k1+1;
-            float w1 = k2-ky;
-            float w2 = 1.0f-w1;
-            for (int il=ils; il<ile; il++)
-              dm[il] += w1*e[x][k1+il]+w2*e[x][k2+il];
-          }
+        } else { // interpolate
+          linearInterp(ie,je,is,r,ils,ile,dm,e);
         }
         // update previous errors and record moves.
         for (int il=ils; il<ile; il++) {
@@ -1617,6 +1591,22 @@ public class DynamicWarpingC {
       ii += is;
       il += (int)m[ii][il];
       u[ii] = (float)shifts.getValue(il);
+    }
+  }
+
+  private static void linearInterp(
+      int ie, int je, int is, float r, int ils, int ile,
+      float[] dm, float[][] e) 
+  {
+    for (int x=je+is; x!=ie; x+=is) {
+      float ky = r*(ie-x);
+      int k1 = (int)ky;
+      if (ky<0.0f) --k1;
+      int k2 = k1+1;
+      float w1 = k2-ky;
+      float w2 = 1.0f-w1;
+      for (int il=ils; il<ile; il++)
+        dm[il] += w1*e[x][k1+il]+w2*e[x][k2+il];
     }
   }
 

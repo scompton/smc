@@ -58,6 +58,22 @@ public class Synthetic {
     return g;
   }
 
+  public static float[] addNoise(
+      float nrms, float fpeak, float[] f, long seed)
+  {
+    int n = f.length;
+    Random r = new Random(seed);
+    float[] g = mul(2.0f,sub(randfloat(r,n),0.5f));
+    g = addRickerWavelet(fpeak,g);
+    RecursiveGaussianFilter rgf = new RecursiveGaussianFilter(1.0);
+    rgf.apply1(g,g);
+    float frms = sqrt(sum(mul(f,f))/n);
+    float grms = sqrt(sum(mul(g,g))/n);
+    float s = nrms*frms/grms;
+    print("nrms="+nrms+", frms="+frms+", noise_rms="+grms+", noise_scale="+s);
+    return add(f,mul(g,s));
+  }
+
   public static void main(String[] args) {
     final Sampling s = new Sampling(1001,0.002,0.0);
     float fpeak = 30; // Hz
@@ -87,4 +103,7 @@ public class Synthetic {
     return (1.0f-2.0f*x*x)*exp(-x*x);
   }
 
+  private static void print(String s) {
+    System.out.println(s);
+  }
 }

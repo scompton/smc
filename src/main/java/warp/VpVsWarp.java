@@ -88,9 +88,9 @@ public class VpVsWarp {
   }
 
   /**
-   * Returns g warped to f, with shifts computed from vpvs array.
+   * Returns g warped to f.
    * @param g
-   * @param vpvs
+   * @param u
    * @param sg
    * @param sf
    * @return g warped to f.

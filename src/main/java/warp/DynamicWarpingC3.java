@@ -207,31 +207,46 @@ public class DynamicWarpingC3 {
     float r = du/dPP; // slope from first time & shift to last time & shift
     float rMin = (vpvsMin-1.0f)*0.5f;
     float rMax = (vpvsMax-1.0f)*0.5f;
-    float u1MinNew = (float)((dPP*tan(atan(rMin)))-du);
-    float u1MaxNew = (float)((dPP*tan(atan(rMax)))-du);
-    print("r="+r+", rMin="+rMin+", rMax="+rMax);
+    // print("r="+r+", rMin="+rMin+", rMax="+rMax);
     float g = 2.0f*r+1.0f; // constant Vp/Vs
     float c = (g+1.0f)*0.5f; // compression constant
-    Check.argument(u1Max>0,"u1Max>0");
+    float u1MinC = (float)((dPP*tan(atan(rMin)))-du);
+    float u1MaxC = (float)((dPP*tan(atan(rMax)))-du);
+    float uSMinC = uSMin/c;
+    float uSMaxC = uSMax/c;
     int ippl = sPP.indexOfNearest(ppl);
     Sampling s1 = new Sampling(ippl+1,sPP.getDelta(),sPP.getFirst());
     print("DynamicWarpingC3 fromVpVs:\n"+
           "  PP max time:      "+sPP.getLast()+"\n"+
           "  PS max time:      "+sPS.getLast()+"\n"+
           "  Warping max time: "+s1.getLast()+"\n"+
-          "  Minimum shift:    "+u1Min+"\n"+
-          "  Maximum shift:    "+u1Max+"\n"+
           "  Scale factor:     "+c+"\n"+
-          "  Minimum shift c:  "+u1MinNew+"\n"+
-          "  Maximum shift c:  "+u1MaxNew+"\n");
+          "  Specified shifts:\n"+
+          "    Minimum u1: "+u1Min+", Maximum u1: "+u1Max+"\n"+
+          "    Minimum uS: "+uSMin+", Maximum uS: "+uSMax+"\n"+
+          "  Scaled shifts:\n"+
+          "    Minimum u1: "+u1MinC+", Maximum u1: "+u1MaxC+"\n"+
+          "    Minimum uS: "+uSMinC+", Maximum uS: "+uSMaxC);
     DynamicWarpingC3 dw = new DynamicWarpingC3(
-      u1MinNew,u1MaxNew,uSMin,uSMax,s1,s2,s3);
+      u1MinC,u1MaxC,uSMinC,uSMaxC,s1,s2,s3);
     dw.setCompression(c);
     return dw;
   }
 
   public void setCompression(float c) {
     _c = c;
+  }
+
+  public void setWeight1(float w1) {
+    _w1 = w1;
+  }
+
+  public void setWeight2(float w2) {
+    _w2 = w2;
+  }
+
+  public void setWeight3(float w3) {
+    _w3 = w3;
   }
 
   public float getCompression() {
@@ -394,41 +409,33 @@ public class DynamicWarpingC3 {
       final Sampling sg, final float[] g,
       final Sampling sh, final float[] h)
   {
-    final Sampling s1 = _su1;
-    final Sampling sS = _suS;
+    final Sampling u1 = _su1;
+    final Sampling uS = _suS;
     final Sampling se = _s1;
-    final int n1 = s1.getCount();
-    final int nS = sS.getCount();
+    final int nu1 = u1.getCount();
+    final int nuS = uS.getCount();
     final int ne = se.getCount();
     final int nf = sf.getCount();
     final int ng = sg.getCount();
     final int nh = sh.getCount();
     final double de = se.getDelta();
-    final double dh = sh.getDelta();
+    final double df = sf.getDelta();
     final double dg = sg.getDelta();
+    final double dh = sh.getDelta();
     final double fe = se.getFirst();
-    final double fh = sh.getFirst();
+    final double ff = sf.getFirst();
     final double fg = sg.getFirst();
-    final float[][][] e = new float[ne][n1][nS];
+    final double fh = sh.getFirst();
+    final float[][][] e = new float[ne][nu1][nuS];
     final float[] fi = new float[ne];
     final float[] gi = new float[ne];
     final float[] hi = new float[ne];
-    _si.interpolate(sf,f,se,fi);
-    for (int iS=0; iS<nS; iS++) {
-      final int iSf = iS;
-      final double vS = sS.getValue(iSf);
-      for (int i1=0; i1<n1; i1++) {
-        double v1 = s1.getValue(i1);
-        _si.interpolate(nh,dh,fh,h,ne,de,fe+vS+v1,hi);
-        _si.interpolate(ng,dg,fg,g,ne,de,fe+v1,   gi);
-        for (int ie=0; ie<ne; ie++) {
-          float e1 = error(fi[ie],gi[ie]);
-          float e2 = error(fi[ie],hi[ie]);
-          float e3 = error(gi[ie],hi[ie]);
-          e[ie][i1][iSf] = e1+e2+e3;
-        }
-      }
-    }
+    computeErrors(
+      nf,df,ff,f,fi,
+      ng,dg,fg,g,gi,
+      nh,dh,fh,h,hi,
+      ne,de,fe,e,
+      nu1,u1.getValues(),nuS,uS.getValues());
     return e;
   }
 
@@ -829,6 +836,9 @@ public class DynamicWarpingC3 {
   private float _c; // compression factor before warping
   private SincInterp _si;
   private ShiftInterp _ui;
+  private float _w1 = 1.0f;
+  private float _w2 = 1.0f;
+  private float _w3 = 1.0f;
   private final static float EPOW = 2.0f;
   private static final float BYTES_TO_MB = 1.0f/1000000.0f;
 
@@ -902,6 +912,87 @@ public class DynamicWarpingC3 {
 
   private int[][][][] makeM(int ng) {
     return new int[ng][_su1.getCount()][_suS.getCount()][2];
+  }
+
+  private void computeErrors(
+      int nf, double df, double ff, float[] f, float[] fi,
+      int ng, double dg, double fg, float[] g, float[] gi,
+      int nh, double dh, double fh, float[] h, float[] hi,
+      int ne, double de, double fe, float[][][] e,
+      int nu1, double[] u1v, int nuS, double[] uSv)
+  {
+    float error;
+    double lg = (ng-1)*dg;
+    double lh = (nh-1)*dh;
+    _si.interpolate(nf,df,ff,f,ne,de,fe,fi);
+    for (int iuS=0; iuS<nuS; iuS++) {
+      double uS = uSv[iuS];
+      for (int iu1=0; iu1<nu1; iu1++) {
+        double u1 = u1v[iu1];
+        _si.interpolate(nh,dh,fh,h,ne,de,fe+u1+uS,hi);
+        _si.interpolate(ng,dg,fg,g,ne,de,fe+u1   ,gi);
+        for (int ie=0; ie<ne; ie++) {
+          double gv = fe+ie*de+u1;
+          double hv = fe+ie*de+u1+uS;
+          if (gv<fg || gv>lg || hv<fh || hv>lh)
+            error = Float.NaN;
+          else {
+            float e1 = _w1*error(fi[ie],gi[ie]);
+            float e2 = _w2*error(fi[ie],hi[ie]);
+            float e3 = _w3*error(gi[ie],hi[ie]);
+            error = e1+e2+e3;
+          }
+          e[ie][iu1][iuS] = error;
+        }
+      }
+    }
+    reflectErrors(e);
+  }
+
+  /**
+   * Replaces NaNs from out-of-bounds errors with reflected error values.
+   * @param e alignment errors.
+   */
+  private void reflectErrors(float[][][] e) {
+    reflect(e, 1);
+    reflect(e,-1);
+  }
+
+  /**
+   * Replaces NaNs from out-of-bounds errors with reflected error values.
+   * This method checks out-of-bounds errors from one direction given by the
+   * {@code dir} argument. In the forward direction ({@code dir>0}) NaNs
+   * are removed in the direction of increasing shifts. In the reverse
+   * direction ({@code dir<0}) NaNs are removed in the direction of decreasing
+   * shifts. The method terminates when the first or last value is not a NaN.
+   * @param e alignment errors.
+   * @param dir {@code >0} forward direction, {@code <0} reverse direction.
+   */
+  private void reflect(float[][][] e, int dir) {
+    int nuS = e[0][0].length;
+    int nu = e[0].length;
+    int ne = e.length;
+    int ieb = dir>0 ?  0 : ne-1; // beginning error index
+    int iub = dir>0 ?  0 : nu-1; // beginning shift index
+    int iee = dir>0 ? ne :   -1; // end error index
+    int iue = dir>0 ? nu :   -1; // end shift index
+    int ire = dir>0 ? -1 :   nu; // end shift reflected index
+    int s   = dir>0 ?  1 :   -1; // stride
+    for (int ie=ieb; ie!=iee; ie+=s) {
+      for (int is=0; is<nuS; is++) {
+        if (Float.isNaN(e[ie][iub][is])) {
+          int iu = iub+s;
+          while (iu!=iue && Float.isNaN(e[ie][iu][is])) iu += s;
+          int ir = iu-s; // reflected index, is one sample back/forward.
+          for (iu+=s; iu!=iue && ir!=ire; iu+=s, ir-=s)
+            e[ie][ir][is] = e[ie][iu][is];
+          for (; ir!=ire; ir-=s) // extrapolate where we couldn't reflect
+            e[ie][ir][is] = e[ie][ir+s][is];
+        } else {
+          break;
+        }
+      }
+    }
   }
 
   private float error(float f, float g) {
