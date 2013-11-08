@@ -28,38 +28,42 @@ hw3 = 10
 vpvsAvg = 2.0
 
 # Contstraints for time shift slopes, which are physically related to interval
-# Vp/Vs ratios. Compute slope parameters from vpvsMin/Max.
-vpvsMin,vpvsMax = 1.5,2.5
+# Vp/Vs ratios. Compute slope parameters from vpvsMin
+vpvsMin,vpvsMax = 1.5,2.0
 r1min = (vpvsMin-1.0)/2
 r1max = (vpvsMax-1.0)/2
-rSmin = 0.0
-rSmax = 0.1
+rSmin =  -0.0
+rSmax =  0.1
 uSmin = 0.0
-uSmax = 0.03
+uSmax = 0.04
 
-ppName = "pp_smooth"
-ps1Name = "ps1_fkk_smooth"
-ps2Name = "ps2_fk_smooth"
+# ppName = "pp_smooth"
+# ps1Name = "ps1_fkk_smooth"
+# ps2Name = "ps2_fk_smooth"
+ppName = "pp"
+ps1Name = "ps1"
+ps2Name = "ps2"
 #############################################################################
 
 def main(args):
-  # displayGBC()
+  displayGBC()
   # displayGBC(ppName,ps1Name,ps2Name)
-  go3(ppName,ps1Name,ps2Name,75,75,75,hw2,hw3)
-  go3C(ppName,ps1Name,ps2Name,75,hw2,hw3)
+  #go3(ppName,ps1Name,ps2Name,75,75,100,hw2,hw3)
+  # go3C(ppName,ps1Name,ps2Name,75,hw2,hw3)
 
 def go3(ppName,ps1Name,ps2Name,dg1,dg2,dgS,hw2,hw3):
   # sf,u1e = goPpPs1Envelope(ppName,ps1Name,dg1,hw2,hw3)
   sf,u1 = goPpPs1(ppName,ps1Name,dg1,hw2,hw3)
-  sf,u2 = goPpPs2(ppName,ps2Name,dg2,hw2,hw3)
   sg,uS = goPs1Ps2(ps1Name,ps2Name,dgS,hw2,hw3)
   uSPP = WarpUtils.ps1ToPpTime(sf,u1,sg,uS)
   u2c = WarpUtils.compositeShifts(sf,u1,uSPP)
+  sf,u2 = goPpPs2(ppName,ps2Name,dg2,hw2,hw3,uc=u2c)
   plot1([[u1,"k-"],[u2,"r-"],[u2c,"b-"]],sf,title="shifts",width=400,height=800,
         o=x1down_x2right)
   gammaS = WarpUtils.gammaS(sf,u1,u2)
   gammaSc = WarpUtils.gammaS(sf,u1,u2c)
-  plotGammaS([[gammaS,"k-"],[gammaSc,"b-"]],sf,"PP")
+  plotGammaS([[gammaS,"k-"]],sf,"PP",desc="")
+  plotGammaS([[gammaSc,"k-"]],sf,"PP",desc="composite")
 
 def go3C(ppName,ps1Name,ps2Name,dg1,hw2,hw3):
   desc1 = "PP & PS1 C3"
@@ -74,8 +78,6 @@ def go3C(ppName,ps1Name,ps2Name,dg1,hw2,hw3):
   se = dw.getSampling1()
   su1 = dw.getSamplingU1()
   suS = dw.getSamplingUS()
-  el = [se.getFirst(),se.getLast()]
-  u1l = [su1.getFirst(),su1.getLast()]
   g1 = Subsample.subsampleEnvelope(se.getCount(),f,dg1)
   g1 = Subsample.indicesToSampling(sf,g1)
   sw = Stopwatch()
@@ -84,7 +86,7 @@ def go3C(ppName,ps1Name,ps2Name,dg1,hw2,hw3):
   sw.stop()
   print "Compute error time: %g seconds"%sw.time()
   sw.restart()
-  u1,uS = dw.findShifts(sf,sg,e,g1)
+  u1,uS = dw.findShifts(sf,e,g1)
   sw.stop()
   print "Find shift time: %g seconds"%sw.time()
   # u2 = WarpUtils.computeU2(sf,u1,sg,uS)
@@ -103,10 +105,10 @@ def go3C(ppName,ps1Name,ps2Name,dg1,hw2,hw3):
   # print "NRMS S: %g"%WarpUtils.computeNrms(se.getCount(),g[hw3][hw2],wS)
   print "NRMS S: %g"%WarpUtils.computeNrms(se.getCount(),w1,wS)
   # Plot warped traces
-  plotWarped([[f[hw3][hw2],"k-"],[w1,"r-"]],sf,el,"PP",desc1)
-  plotWarped([[f[hw3][hw2],"k-"],[w2,"b-"]],sf,el,"PP",desc2)
-  # plotWarped([[g[hw3][hw2],"b-"],[wS,"m-"]],sf,el,"PS1",descS)
-  plotWarped([[w1,"b-"],[wS,"m-"]],sf,el,"PP",descS)
+  plotWarped([[f[hw3][hw2],"k-"],[w1,"r-"]],sf,se,"PP",desc1)
+  plotWarped([[f[hw3][hw2],"k-"],[w2,"b-"]],sf,se,"PP",desc2)
+  # plotWarped([[g[hw3][hw2],"b-"],[wS,"m-"]],sf,se,"PS1",descS)
+  plotWarped([[w1,"b-"],[wS,"m-"]],sf,se,"PP",descS)
   plotVpVs(u1,sf,"PP",desc1)
   plotVpVs(u2,sf,"PP",desc2)
   gammaS = WarpUtils.gammaS(sf,u1,u2)
@@ -123,14 +125,12 @@ def goPpPs1(ppName,ps1Name,dg1,hw2,hw3):
   e,u = goWarp(sf,f,sg,g,dg1,dw)
   se = dw.getSampling1()
   su = dw.getSamplingU()
-  el = [se.getFirst(),se.getLast()]
-  ul = [su.getFirst(),su.getLast()]
   uA = [[copy(se.getCount(),u),"u","w-",2.0]]
   w = WarpUtils.applyShifts(sf,u,sg,g[hw3][hw2])
   print "NRMS 1: %g"%WarpUtils.computeNrms(se.getCount(),f[hw3][hw2],w)
   wA = [[f[hw3][hw2],"k-"],[w,"r-"]]
-  plotError2(e,se,su,uA,el,ul,"PP",desc)
-  plotWarped(wA,sf,el,"PP",desc)
+  plotError2(e,se,su,uA,"PP",desc)
+  plotWarped(wA,sf,se,"PP",desc)
   plotVpVs(u,sf,"PP",desc)
   return sf,u
 
@@ -148,17 +148,15 @@ def goPpPs1Envelope(ppName,ps1Name,dg1,hw2,hw3):
   e,u = goWarp(sf,fe,sg,ge,dg1,dw)
   se = dw.getSampling1()
   su = dw.getSamplingU()
-  el = [se.getFirst(),se.getLast()]
-  ul = [su.getFirst(),su.getLast()]
   uA = [[copy(se.getCount(),u),"u","w-",2.0]]
   w = WarpUtils.applyShifts(sf,u,sg,g[hw3][hw2])
   wA = [[f[hw3][hw2],"k-"],[w,"r-"]]
-  plotError2(e,se,su,uA,el,ul,"PP",desc)
-  plotWarped(wA,sf,el,"PP",desc)
+  plotError2(e,se,su,uA,"PP",desc)
+  plotWarped(wA,sf,se,"PP",desc)
   plotVpVs(u,sf,"PP",desc)
   return sf,u
 
-def goPpPs2(ppName,ps2Name,dg1,hw2,hw3):
+def goPpPs2(ppName,ps2Name,dg1,hw2,hw3,uc=None):
   desc = "PP & PS2"
   f,sf = getPp(i3,hw3,i2,hw2,ppName),s1pp
   h,sh = getPs2(i3,hw3,i2,hw2,ps2Name) # returns data and sampling
@@ -168,14 +166,16 @@ def goPpPs2(ppName,ps2Name,dg1,hw2,hw3):
   e,u = goWarp(sf,f,sh,h,dg1,dw)
   se = dw.getSampling1()
   su = dw.getSamplingU()
-  el = [se.getFirst(),se.getLast()]
-  ul = [su.getFirst(),su.getLast()]
-  uA = [[copy(se.getCount(),u),"u","w-",2.0]]
+  if uc:
+    uA = [[copy(se.getCount(),u),"u","w-",2.0],
+          [copy(se.getCount(),uc),"uc","y-",2.0]]
+  else:
+    uA = [[copy(se.getCount(),u),"u","w-",2.0]]
   w = WarpUtils.applyShifts(sf,u,sh,h[hw3][hw2])
   print "NRMS 2: %g"%WarpUtils.computeNrms(se.getCount(),f[hw3][hw2],w)
   wA = [[f[hw3][hw2],"k-"],[w,"b-"]]
-  plotError2(e,se,su,uA,el,ul,"PP",desc)
-  plotWarped(wA,sf,el,"PP",desc)
+  plotError2(e,se,su,uA,"PP",desc)
+  plotWarped(wA,sf,se,"PP",desc)
   plotVpVs(u,sf,"PP",desc)
   return sf,u
 
@@ -189,28 +189,13 @@ def goPs1Ps2(ps1Name,ps2Name,dg1,hw2,hw3):
   e,u = goWarp(sg,g,sh,h,dg1,dw)
   se = dw.getSampling1()
   su = dw.getSamplingU()
-  el = [se.getFirst(),se.getLast()]
-  ul = [su.getFirst(),su.getLast()]
   uA = [[copy(se.getCount(),u),"u","w-",2.0]]
   w = WarpUtils.applyShifts(sg,u,sh,h[hw3][hw2])
   print "NRMS S: %g"%WarpUtils.computeNrms(se.getCount(),g[hw3][hw2],w)
   wA = [[g[hw3][hw2],"b-"],[w,"m-"]]
-  plotError2(e,se,su,uA,el,ul,"PS1",desc)
-  plotWarped(wA,sg,el,"PS1",desc)
+  plotError2(e,se,su,uA,"PS1",desc)
+  plotWarped(wA,sg,se,"PS1",desc)
   return sg,u
-
-# def go3WarpC3(ppName,ps1Name,ps2Name,dgPP,hw2,hw3):
-#   desc1 =  ppName+" & "+ps1Name
-#   desc2 =  ppName+" & "+ps2Name
-#   descS = ps1Name+" & "+ps2Name
-#   f,sf =  getPp(i3,hw3,i2,hw2, ppName),s1pp
-#   g,sg = getPs1(i3,hw3,i2,hw2,ps1Name) # returns data and sampling
-#   h,sh = getPs2(i3,hw3,i2,hw2,ps2Name) # returns data and sampling
-#   dgf = dgPP
-#   dw = DynamicWarpingC3.fromVpVs(sf,sg,vpvsAvg,0.0,0.0,0.05)
-#   dw.setStrainLimits(r1min,r1max,0.0,0.4)
-#   dw.setInterpolationMethod(Method.LINEAR)
-#   warpC3(sf,f,sg,g,sh,h,dgf,dw,hw2,hw3,"PP","PS1",desc1,desc2,descS)
 
 def getPp(i3,hw3,i2,hw2,ppName):
   pp = getGbcImage(baseDir,ppName)
@@ -241,145 +226,6 @@ def goWarp(sf,f,sg,g,dg1,dw):
   g1 = Subsample.indicesToSampling(sf,g1)
   u = dw.findShifts(sf,e,g1)
   return e,u
-
-# def warpC(sf,f,sg,g,sh,h,dgf,dgg,dw1,dw2,dwS,hw2,hw3,fname,gname,
-#           desc1,desc2,descS):
-#   e1 = dw1.computeErrorsSum(sf,f,sg,g) #  PP & PS1
-#   e2 = dw2.computeErrorsSum(sf,f,sh,h) #  PP & PS2
-#   eS = dwS.computeErrorsSum(sg,g,sh,h) # PS1 & PS2
-#   se1 = dw1.getSampling1()
-#   se2 = dw2.getSampling1()
-#   seS = dwS.getSampling1()
-#   su1 = dw1.getSamplingU()
-#   su2 = dw2.getSamplingU()
-#   suS = dwS.getSamplingU()
-#   e1l = [se1.getFirst(),se1.getLast()]
-#   e2l = [se2.getFirst(),se2.getLast()]
-#   eSl = [seS.getFirst(),seS.getLast()]
-#   u1l = [su1.getFirst(),su1.getLast()]
-#   u2l = [su2.getFirst(),su2.getLast()]
-#   uSl = [suS.getFirst(),suS.getLast()]
-#   gf = Subsample.subsampleEnvelope(se1.getCount(),f,dgf)
-#   gg = Subsample.subsampleEnvelope(se2.getCount(),g,dgg)
-#   gf = Subsample.indicesToSampling(sf,gf)
-#   gg = Subsample.indicesToSampling(sg,gg)
-#   u1 = dw1.findShifts(sf,e1,gf)
-#   u2 = dw2.findShifts(sf,e2,gf)
-#   uS = dwS.findShifts(sg,eS,gg)
-#   u2c = WarpUtils.computeU2(sf,u1,sg,uS)
-#   w1 = WarpUtils.applyShifts(sf,u1,sg,g[hw3][hw2])
-#   w2 = WarpUtils.applyShifts(sf,u2,sh,h[hw3][hw2])
-#   wS = WarpUtils.applyShifts(sg,uS,sh,h[hw3][hw2])
-#   w2c = WarpUtils.applyShifts(sf,u2c,sh,h[hw3][hw2])
-#   print "NRMS 1: %g"%WarpUtils.computeNrms(se1.getCount(),f[hw3][hw2],w1)
-#   print "NRMS 2: %g"%WarpUtils.computeNrms(se2.getCount(),f[hw3][hw2],w2)
-#   print "NRMS 2c: %g"%WarpUtils.computeNrms(se2.getCount(),f[hw3][hw2],w2c)
-#   print "NRMS S: %g"%WarpUtils.computeNrms(seS.getCount(),g[hw3][hw2],wS)
-#   # Plot warped traces
-#   plot1([[f[hw3][hw2],"k-"],[w1,"r-"]],sf,title="Warp 1",
-#         vLabel=fname+" time (s)",width=400,height=900,vLimits=e1l,
-#         hLimits=[-1.5,1.5],o=x1down_x2right)
-#   plot1([[f[hw3][hw2],"k-"],[w2,"b-"]],sf,title="Warp 2",
-#         vLabel=fname+" time (s)",width=400,height=900,vLimits=e1l,
-#         hLimits=[-1.5,1.5],o=x1down_x2right)
-#   plot1([[f[hw3][hw2],"k-"],[w2c,"b-"]],sf,title="Warp 2c",
-#         vLabel=fname+" time (s)",width=400,height=900,vLimits=e1l,
-#         hLimits=[-1.5,1.5],o=x1down_x2right)
-#   plot1([[g[hw3][hw2],"b-"],[wS,"m-"]],sg,title="Warp S",
-#         vLabel=fname+" time (s)",width=400,height=900,vLimits=e2l,
-#         hLimits=[-1.5,1.5],o=x1down_x2right)
-#   gamma1 = WarpUtils.vpvs(sf,u1)
-#   gamma2 = WarpUtils.vpvs(sf,u2)
-#   gamma2c = WarpUtils.vpvs(sf,u2c)
-#   gammaS = WarpUtils.gammaS(sf,u1,u2)
-#   gammaSc = WarpUtils.gammaS(sf,u1,u2c)
-#   plot1([[gamma1,"k-"]],title="gamma1",s=sf,vLabel=fname+" time (s)",
-#         hLabel="Vp/Vs ratio",width=400,height=900,hLimits=[vpvsMin,vpvsMax],
-#         o=x1down_x2right)
-#   plot1([[gamma2,"k-"]],title="gamma2",s=sf,vLabel=fname+" time (s)",
-#         hLabel="Vp/Vs ratio",width=400,height=900,hLimits=[vpvsMin,vpvsMax],
-#         o=x1down_x2right)
-#   plot1([[gamma2c,"k-"]],title="gamma2c",s=sf,vLabel=fname+" time (s)",
-#         hLabel="Vp/Vs ratio",width=400,height=900,hLimits=[vpvsMin,vpvsMax],
-#         o=x1down_x2right)
-#   plot1([[gammaS,"k-"]],title="gammaS",s=sf,vLabel=fname+" time (s)",
-#         hLabel="",width=400,height=900,hLimits=[-0.1,0.1],o=x1down_x2right)
-#   plot1([[gammaSc,"k-"]],title="gammaSc",s=sf,vLabel=fname+" time (s)",
-#         hLabel="",width=400,height=900,hLimits=[-0.1,0.1],o=x1down_x2right)
-#   e1 = WarpUtils.transposeLag(e1)
-#   e2 = WarpUtils.transposeLag(e2)
-#   eS = WarpUtils.transposeLag(eS)
-#   WarpUtils.normalizeErrors(e1)
-#   WarpUtils.normalizeErrors(e2)
-#   WarpUtils.normalizeErrors(eS)
-#   plot2(e1,pA=[[copy(se1.getCount(),u1),"u1","w-",2.0]],title="AE "+desc1,
-#         s1=se1,s2=su1,hLabel=fname+" time (s)",vLabel="Time shift (s)",
-#         cbar="Error",clips1=[0,0.3],width=1200,height=600,hLimits=e1l,vLimits=u1l,
-#         o=x1right_x2up)
-#   plot2(e2,pA=[[copy(se2.getCount(),u2),"u2","w-",2.0]],title="AE "+desc2,
-#         s1=se2,s2=su2,hLabel=fname+" time (s)",vLabel="Time shift (s)",
-#         cbar="Error",clips1=[0,0.3],width=1200,height=600,hLimits=e2l,vLimits=u2l,
-#         o=x1right_x2up)
-#   plot2(e2,pA=[[copy(se2.getCount(),u2c),"u2c","w-",2.0]],title="AE c ",
-#         s1=se2,s2=su2,hLabel=fname+" time (s)",vLabel="Time shift (s)",
-#         cbar="Error",clips1=[0,0.3],width=1200,height=600,hLimits=e2l,vLimits=u2l,
-#         o=x1right_x2up)
-#   plot2(eS,pA=[[copy(seS.getCount(),uS),"uS","w-",2.0]],title="AE "+descS,
-#         s1=seS,s2=suS,hLabel=gname+" time (s)",vLabel="Time shift (s)",
-#         cbar="Error",clips1=[0,0.3],width=1200,height=600,hLimits=eSl,vLimits=uSl,
-#         o=x1right_x2up)
-  
-# def warpC3(sf,f,sg,g,sh,h,dgf,dw,hw2,hw3,fname,gname,desc1,desc2,descS):
-#   sw = Stopwatch()
-#   sw.restart()
-#   e = dw.computeErrorsSum(sf,f,sg,g,sh,h)
-#   sw.stop()
-#   print "Compute error time: %g seconds"%sw.time()
-#   se = dw.getSampling1()
-#   su1 = dw.getSamplingU1()
-#   suS = dw.getSamplingUS()
-#   el = [se.getFirst(),se.getLast()]
-#   u1l = [su1.getFirst(),su1.getLast()]
-#   gf = Subsample.subsampleEnvelope(se.getCount(),f,dgf)
-#   gf = Subsample.indicesToSampling(sf,gf)
-#   sw.restart()
-#   u1,uS = dw.findShifts(sf,sg,e,gf)
-#   sw.stop()
-#   print "Find shift time: %g seconds"%sw.time()
-#   u2 = WarpUtils.computeU2(sf,u1,sg,uS)
-#   w1 = WarpUtils.applyShifts(sf,u1,sg,g[hw3][hw2])
-#   w2 = WarpUtils.applyShifts(sf,u2,sh,h[hw3][hw2])
-#   wS = WarpUtils.applyShifts(sg,uS,sh,h[hw3][hw2])
-#   print "NRMS 1: %g"%WarpUtils.computeNrms(se.getCount(),f[hw3][hw2],w1)
-#   print "NRMS 2: %g"%WarpUtils.computeNrms(se.getCount(),f[hw3][hw2],w2)
-#   print "NRMS S: %g"%WarpUtils.computeNrms(se.getCount(),g[hw3][hw2],wS)
-#   # Plot warped traces
-#   plot1([[f[hw3][hw2],"k-"],[w1,"r-"]],sf,title="WarpC3 1",
-#         vLabel=fname+" time (s)",width=400,height=900,vLimits=el,
-#         hLimits=[-1.5,1.5],o=x1down_x2right)
-#   plot1([[f[hw3][hw2],"k-"],[w2,"b-"]],sf,title="WarpC3 2",
-#         vLabel=fname+" time (s)",width=400,height=900,vLimits=el,
-#         hLimits=[-1.5,1.5],o=x1down_x2right)
-#   plot1([[g[hw3][hw2],"b-"],[wS,"m-"]],sg,title="WarpC3 S",
-#         vLabel=fname+" time (s)",width=400,height=900,vLimits=el,
-#         hLimits=[-1.5,1.5],o=x1down_x2right)
-#   gamma1 = WarpUtils.vpvs(sf,u1)
-#   gamma2 = WarpUtils.vpvs(sf,u2)
-#   gammaS = WarpUtils.gammaS(sf,u1,u2)
-#   plot1([[gamma1,"k-"]],title="gamma1",s=sf,vLabel=fname+" time (s)",
-#         hLabel="Vp/Vs ratio",width=400,height=900,hLimits=[vpvsMin,vpvsMax],
-#         o=x1down_x2right)
-#   plot1([[gamma2,"k-"]],title="gamma2",s=sf,vLabel=fname+" time (s)",
-#         hLabel="Vp/Vs ratio",width=400,height=900,hLimits=[vpvsMin,vpvsMax],
-#         o=x1down_x2right)
-#   plot1([[gammaS,"k-"]],title="gammaS",s=sf,vLabel=fname+" time (s)",
-#         hLabel="",width=400,height=900,hLimits=None,o=x1down_x2right)
-#   e = WarpUtils.transposeLag(e)
-#   e = WarpUtils.transposeLag12(e)
-#   WarpUtils.normalizeErrors(e)
-#   plot3(e,title="AE3",s1=se,s2=su1,hLabel=fname+" time (s)",
-#         vLabel="Time shift (s)",cbar="Error",clips1=[0,0.3],width=1200,
-#         height=600,hLimits=el,vLimits=u1l,o=x1right_x2up)
 
 def getCube(f,i3,hw3,i2,hw2):
   n2c = 2*hw2+1
@@ -470,12 +316,14 @@ def getShiftCoords1(g1,u):
 #############################################################################
 # Plotting (most in gbcUtils.py)
 
-def plotError2(e,se,su,uA,el,ul,hname,desc):
+def plotError2(e,se,su,uA,hname,desc):
   e = Transpose.transpose12(e)
   WarpUtils.normalizeErrors(e)
+  el = [se.getFirst(),se.getLast()]
+  ul = [su.getFirst(),su.getLast()]
   plot2(e,pA=uA,title="AE "+desc,s1=se,s2=su,hLabel=hname+" time (s)",
         vLabel="Vertical shift (s)",cbar="Error",clips1=[0,0.2],width=1200,
-        height=600,hLimits=el,vLimits=ul,o=x1right_x2up)
+        height=600,hLimits=el,vLimits=ul,cbw=100,o=x1right_x2up)
 
 def plotError3(e,se,su1,suS,u1,uS):
   e = Transpose.transpose132(e)
@@ -485,7 +333,8 @@ def plotError3(e,se,su1,suS,u1,uS):
   rgb = getRGB(se.getCount(),Color.YELLOW)
   plot3D(e,se,su1,suS,xyz=xyz,rgb=rgb,clips=[0.0,0.3])
 
-def plotWarped(wA,s,el,vname,desc):
+def plotWarped(wA,s,se,vname,desc):
+  el = [se.getFirst(),se.getLast()]
   plot1(wA,title=desc+" warped",s=s,vLabel=vname+" time (s)",
         width=400,height=900,vLimits=el,o=x1down_x2right)
 

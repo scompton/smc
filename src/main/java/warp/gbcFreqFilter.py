@@ -14,11 +14,11 @@ klower,kupper,kwidth,aerror = 0.0,0.06,0.05,0.01
 #############################################################################
 
 def main(args):
-  # goFilterDesign("ps1",i3=72)
-  # goFilterDesign("ps2",i3=72)
-  goFilter("ps2",0.2)
-  # goFilterDesign("ps1")
-  # viewFkk()
+  goFilterDesign("ps1",i3=72)
+  #goFilterDesign("ps2",i3=72)
+  #goFilter("ps2",0.2)
+  #goFilterDesign("ps1")
+  #viewFkk()
 
 def viewFkk():
   ps1 = getGbcImage(baseDir,"ps1")

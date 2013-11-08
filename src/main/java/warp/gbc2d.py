@@ -55,7 +55,7 @@ def goSagVsReg():
   # Warping using a structure aligned grid.
   # dg1=50, ng=13 - choose 13 strongest reflectors, that must be a minimum of
   # 50 samples apart. The first and last time samples are 2 of the 13 layers.
-  # us = goShiftsSAG(s1pp,pp,s1ps,ps1,dw,50,13,"PP","PS1")
+  us = goShiftsSAG(s1pp,pp,s1ps,ps1,dw,50,13,"PP","PS1")
 
   # Warping using a regular grid.
   # dg1=80 - use a grid with layers spaced at a minimum of 80 samples apart,
