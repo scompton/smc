@@ -273,7 +273,7 @@ def plot2(f,g=None,pA=None,x12SingleA=None,x12=None,x22=None,
       pt.setStyle(x12Single[3])
       pt.setMarkSize(x12Single[4])
   if x12 and x22:
-    ptx12x22 = v.addPoints2(x12,x22,"x2")
+    ptx12x22 = v.addPoints(x12,x22,"x2")
     ptx12x22.setStyle("rO")
     ptx12x22.setMarkSize(10.0)
   v.setTitle(title)
@@ -398,13 +398,13 @@ def plot3(f,g=None,pA=None,x12SliceA=None,x13=None,x23=None,
   if pA:
     for i in range(len(pA)):
       p = pA[i]
-      pt = v.addPoints(p[0],p[1])
+      pt = v.addPoints3(p[0],p[1])
       pt.setStyle(p[2])
       pt.setLineWidth(p[3])
   if x12SliceA:
     for i in range(len(x12SliceA)):
       x12Slice = x12SliceA[i]
-      ptx11x21 = v.addPoints(x12Slice[0],x12Slice[1],x12Slice[2])
+      ptx11x21 = v.addPoints3(x12Slice[0],x12Slice[1],x12Slice[2])
       ptx11x21.setStyle(x12Slice[3])
       ptx11x21.setMarkSize(x12Slice[4])
   if x13 and x23:

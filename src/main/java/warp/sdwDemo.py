@@ -333,7 +333,7 @@ def plot2(f,g=None,p=None,p2=None,x1=None,x2=None,s1=None,s2=None,title="",
     pt2.setStyle("w--")
     pt2.setLineWidth(2.0)
   if x1 and x2:
-    ptx = v.addPoints2(x1,x2,"x1x2")
+    ptx = v.addPoints(x1,x2,"x1x2")
     ptx.setStyle("rO")
     ptx.setMarkSize(10.0)
   if cbar:
@@ -376,19 +376,19 @@ def plot3(f,g=None,p1=None,p2=None,p3=None,x11=None,x21=None,x13=None,x23=None,
     if cmap2:
       pv2.setColorModel(cmap2)
   if p1:
-    pt = v.addPoints(p1[0],p1[1])
+    pt = v.addPoints3(p1[0],p1[1])
     pt.setStyle(p1[2])
     pt.setLineWidth(p1[3])
   if p2:
-    pt2 = v.addPoints(p2[0],p2[1])
+    pt2 = v.addPoints3(p2[0],p2[1])
     pt2.setStyle(p2[2])
     pt2.setLineWidth(p2[3])
   if p3:
-    pt3 = v.addPoints(p3[0],p3[1])
+    pt3 = v.addPoints3(p3[0],p3[1])
     pt3.setStyle(p3[2])
     pt3.setLineWidth(p3[3])
   if x11 and x21:
-    ptx11x21 = v.addPoints(x11,x21,"x1")
+    ptx11x21 = v.addPoints3(x11,x21,"x1")
     ptx11x21.setStyle("rO")
     ptx11x21.setMarkSize(10.0)
   if x13 and x23:

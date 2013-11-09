@@ -119,9 +119,10 @@ public class Viewer2D {
       Check.argument(f[0].length==_s1.getCount(),
           "f[0].length is not consistent with sampling");
     }
-    _f2 = f;
     PixelsView pv = _pp.addPixels(_s1,_s2,f);
     _vf.addOptions(new PixelsView[]{pv},label);
+    _pv2Map.put(pv,f);
+    updatePixels2();
     return pv;
   }
 
@@ -162,17 +163,59 @@ public class Viewer2D {
     //al panel, displaying the middle frame.
     int n3 = _s3.getCount();
     _i3 = n3/2;
-//    _title = String.valueOf(_i3);
-//    _pp.setTitle(_title);
-    _f3 = f;
+    //_title = String.valueOf(_i3);
+    //_pp.setTitle(_title);
     PixelsView pv = _pp.addPixels(_s1,_s2,f[_i3]);
     Clips clips = new Clips(f);
     pv.setClips(clips.getClipMin(),clips.getClipMax());
 
     _vf.addOptions(new PixelsView[]{pv},label);
     _pv3Map.put(pv,f);
-    updatePixels();
+    updatePixels3();
     return pv;
+  }
+
+  /**
+   * Adds a 2D array to be viewed as 1D slices.
+   * @param p
+   * @param label the label for these points in the options menu,
+   *  or {@code null} for no label.
+   * @return the points view.
+   */
+  public PointsView addPoints(float[][] p, String label) {
+    Sampling s1 = new Sampling(p[0].length);
+    return addPoints(s1,p,label);
+  }
+
+  /**
+   * Adds a 2D array to be viewed as 1D slices.
+   * @param s1 first(fast) dimension sampling.
+   * @param p
+   * @param label the label for these points in the options menu,
+   *  or {@code null} for no label.
+   * @return the points view.
+   */
+  public PointsView addPoints(Sampling s1, float[][] p, String label) {
+    if (_s1==null) {
+      _s1 = s1;
+      if (_orientation==Orientation.X1DOWN_X2RIGHT) {
+        _vMin = _s1.getFirst();
+        _vMax = _s1.getLast();
+      } else {
+        _hMin = _s1.getFirst();
+        _hMax = _s1.getLast();
+      }
+    } else {
+      Check.argument(p[0].length==_s1.getCount(),
+          "p[0].length is not consistent with sampling");
+    }
+    int n2 = p.length;
+    _i2 = n2/2;
+    PointsView pt = _pp.addPoints(_s1,p[_i2]);
+    _vf.addOptions(pt,label);
+    _pt2Map.put(pt,p);
+    updatePoints2();
+    return pt;
   }
 
   /**
@@ -191,23 +234,13 @@ public class Viewer2D {
   }
 
   /**
-   * Adds a view of points (x1,x2) for a sampled function x2(x1),
-   * for all x3.
-   * @param x2 array of x2 coordinates for each x3.
+   * Adds a points view of the arrays x1 and x2 of point (x1,x2) coordinates.
+   * @param x1 array of x1 coordinates.
+   * @param x2 array of x2 coordinates.
    * @param label the label for these points in the options menu,
    *  or {@code null} for no label.
    * @return the points view.
    */
-  public PointsView addPoints(float[][] x2, String label) {
-    Check.argument(_s1.getCount()==x2[0].length,
-        "x2.length is not consistent with sampling");
-    PointsView pt = _pp.addPoints(_s1,x2[_i3]);
-    _ptMap.put(pt,x2);
-    updatePoints();
-    _vf.addOptions(pt,label);
-    return pt;
-  }
-
   public PointsView addPoints(float[] x1, float[] x2, String label) {
     PointsView pt = _pp.addPoints(x1,x2);
     _vf.addOptions(pt,label);
@@ -219,25 +252,75 @@ public class Viewer2D {
    * The lengths of the specified arrays x1 and x2 must be equal.
    * @param x1 array of arrays of x1 coordinates.
    * @param x2 array of arrays of x2 coordinates.
+   * @param label the label for these points in the options menu,
+   *  or {@code null} for no label.
+   * @return the points view.
    */
-  public PointsView addPoints2(float[][] x1, float[][] x2, String label) {
+  public PointsView addPoints(float[][] x1, float[][] x2, String label) {
     PointsView pt = _pp.addPoints(x1,x2);
     _vf.addOptions(pt,label);
     return pt;
   }
 
-  public PointsView addPoints3(float[][][] x1, float[][][] x2, String label) {
-    PointsView pt = _pp.addPoints(x1[_i3],x2[_i3]);
-    _pt123Map.put(pt,new float[][][][]{x1,x2});
-    updatePoints123();
+  /**
+   * Adds a view of points (x1,x2) for a sampled function x2(x1),
+   * specified for each slice of a 3D array.
+   * @param x2 array of x2 coordinates for each x3.
+   * @param label the label for these points in the options menu,
+   *  or {@code null} for no label.
+   * @return the points view.
+   */
+  public PointsView addPoints3(float[][] x2, String label) {
+    Check.argument(_s3.getCount()==x2.length,
+      "x2.length is not consistent with sampling");
+    Check.argument(_s1.getCount()==x2[0].length,
+      "x2[0].length is not consistent with sampling");
+    PointsView pt = _pp.addPoints(_s1,x2[_i3]);
+    _pt31DMap.put(pt,x2);
+    updatePoints3();
     _vf.addOptions(pt,label);
     return pt;
   }
 
-  public PointsView addPoints(float[][] x1, float[][] x2, String label) {
+  /**
+   * Adds a points view of the arrays x1 and x2 of point (x1,x2) coordinates,
+   * specified for each slice of a 3D array.
+   * @param x1 array of x1 coordinates.
+   * @param x2 array of x2 coordinates.
+   * @param label the label for these points in the options menu,
+   *  or {@code null} for no label.
+   * @return the points view.
+   */
+  public PointsView addPoints3(float[][] x1, float[][] x2, String label) {
+    Check.argument(_s3.getCount()==x1.length,
+      "x1.length is not consistent with sampling");
+    Check.argument(_s3.getCount()==x2.length,
+      "x2.length is not consistent with sampling");
+    PointsView pt = _pp.addPoints(x2[_i3],x2[_i3]);
+    _pt32DMap.put(pt,new float[][][]{x1,x2});
+    updatePoints3();
+    _vf.addOptions(pt,label);
+    return pt;
+  }
+
+  /**
+   * Adds a view of arrays of (x1,x2) coordinates for multiple plot segments,
+   * specified for each slice of a 3D array.
+   * The lengths of the specified arrays x1 and x2 must be equal.
+   * @param x1 array of arrays of x1 coordinates for each slice of a 3D array.
+   * @param x2 array of arrays of x2 coordinates for each slice of a 3D array.
+   * @param label the label for these points in the options menu,
+   *  or {@code null} for no label.
+   * @return the points view.
+   */
+  public PointsView addPoints3(float[][][] x1, float[][][] x2, String label) {
+    Check.argument(_s3.getCount()==x1.length,
+      "x1.length is not consistent with sampling");
+    Check.argument(_s3.getCount()==x2.length,
+      "x2.length is not consistent with sampling");
     PointsView pt = _pp.addPoints(x1[_i3],x2[_i3]);
-    _pt122Map.put(pt,new float[][][]{x1,x2});
-    updatePoints122();
+    _pt33DMap.put(pt,new float[][][][]{x1,x2});
+    updatePoints3();
     _vf.addOptions(pt,label);
     return pt;
   }
@@ -345,22 +428,23 @@ public class Viewer2D {
     _vf.addToMenu(changeLimits);
     JPanel bottom = new JPanel();
     bottom.setLayout(new BorderLayout());
-    if (_pv3Map.size()>0) {
-      int n3 = _s3.getCount();
-      int r3 = (int)_s3.getValue(_i3);
-      SliderListener sl = new SliderListener();
-      DefaultBoundedRangeModel brm = new DefaultBoundedRangeModel(
-          r3,0,0,n3-1);
-      JSlider slider = new JSlider(brm);
-      slider.setMajorTickSpacing(n3/10);
-      slider.setMinorTickSpacing(n3/150);
-      slider.setPaintLabels(true);
-      slider.setPaintTicks(true);
+    if (_pt2!=null) {
+      int n2 = _pt2Map.get(_pt2[0]).length;
+      JSlider slider = makeSlider(_i2,n2);
+      PointSliderListener sl = new PointSliderListener();
       slider.addChangeListener(sl);
       bottom.add(slider,BorderLayout.NORTH);
+    } else {
+      if (_pv3Map.size()>0) {
+        int n3 = _s3.getCount();
+        JSlider slider = makeSlider(_i3,n3);
+        PixelSliderListener sl = new PixelSliderListener();
+        slider.addChangeListener(sl);
+        bottom.add(slider,BorderLayout.NORTH);
+      }
+      JTextArea text = addMouseTracker();
+      bottom.add(text,BorderLayout.SOUTH);
     }
-    JTextArea text = addMouseTracker();
-    bottom.add(text,BorderLayout.SOUTH);
     _vf.add(bottom,BorderLayout.SOUTH);
     _vf.setVisible(true);
   }
@@ -387,20 +471,28 @@ public class Viewer2D {
 
   private ViewerFrame _vf;
   private PlotPanel _pp;
-  private float[][] _f2;
-  private float[][][] _f3;
-  private Map<PixelsView,float[][][]> _pv3Map =
-      new HashMap<PixelsView,float[][][]>();
-  private Map<PointsView,float[][]> _ptMap =
-      new HashMap<PointsView,float[][]>();
-  private Map<PointsView,float[][][]> _pt122Map =
-      new HashMap<PointsView,float[][][]>();
-  private Map<PointsView,float[][][][]> _pt123Map =
-      new HashMap<PointsView,float[][][][]>();
-  PointsView[] _pts = new PointsView[0];
-  PointsView[] _pts122 = new PointsView[0];
-  PointsView[] _pts123 = new PointsView[0];
-  PixelsView[] _pvs = new PixelsView[0];
+
+  private Map<PixelsView,float[][]> _pv2Map = new HashMap<>();
+  PixelsView[] _pv2 = null;
+
+  private Map<PointsView,float[][]> _pt2Map = new HashMap<>();
+  PointsView[] _pt2 = null;
+
+  private Map<PixelsView,float[][][]> _pv3Map = new HashMap<>();
+  PixelsView[] _pv3 = null;
+
+  // For 1D x1 and x2 arrays for each slice of the 3D data.
+  private Map<PointsView,float[][]> _pt31DMap = new HashMap<>();
+  PointsView[] _pt31D = null;
+
+  // For 2D x1 and x2 arrays for each slice of the 3D data.
+  private Map<PointsView,float[][][]> _pt32DMap = new HashMap<>();
+  PointsView[] _pt32D = null;
+
+  // For 3D x1 and x2 for each slice of the 3D data.
+  private Map<PointsView,float[][][][]> _pt33DMap = new HashMap<>();
+  PointsView[] _pt33D = null;
+
   private Orientation _orientation;
   private Sampling _s1 = null;
   private Sampling _s2 = null;
@@ -411,6 +503,17 @@ public class Viewer2D {
   private double _vMax;
   private String _title = "";
   private int _i3 = Integer.MIN_VALUE;
+  private int _i2 = Integer.MIN_VALUE;
+
+  private JSlider makeSlider(int i, int n) {
+    DefaultBoundedRangeModel brm = new DefaultBoundedRangeModel(i,0,0,n-1);
+    JSlider slider = new JSlider(brm);
+    slider.setMajorTickSpacing(n/10);
+    slider.setMinorTickSpacing(n/150);
+    slider.setPaintLabels(true);
+    slider.setPaintTicks(true);
+    return slider;
+  }
 
   /**
    * Adds a panel in the bottom of the ViewerFrame that
@@ -446,11 +549,11 @@ public class Viewer2D {
               i2 = _s2.indexOfNearest(wy);
             }
             float v;
-            if (_f2!=null) {
-              v = _f2[i2][i1];
-            } else {
-              v = _f3[_i3][i2][i1];
-            }
+            //FIXME this isn't accurate if there are multiple pixels views.
+            if (_pv2!=null)
+              v = (_pv2Map.get(_pv2[0]))[i2][i1];
+            else
+              v = (_pv3Map.get(_pv3[0]))[_i3][i2][i1];
             text.setText(String.format(
                 "World coordinates: x=%6.3f, y=%6.3f, value=%6.8f",wx,wy,v));
             super.mouseMoved(e);
@@ -461,20 +564,22 @@ public class Viewer2D {
     return text;
   }
 
-  private void updatePixels() {
-    _pvs = _pv3Map.keySet().toArray(new PixelsView[0]);
+  private void updatePixels2() {
+    _pv2 = _pv2Map.keySet().toArray(new PixelsView[0]);
   }
 
-  private void updatePoints() {
-    _pts = _ptMap.keySet().toArray(new PointsView[0]);
+  private void updatePixels3() {
+    _pv3 = _pv3Map.keySet().toArray(new PixelsView[0]);
   }
 
-  private void updatePoints122() {
-    _pts122 = _pt122Map.keySet().toArray(new PointsView[0]);
+  private void updatePoints2() {
+    _pt2 = _pt2Map.keySet().toArray(new PointsView[0]);
   }
 
-  private void updatePoints123() {
-    _pts123 = _pt123Map.keySet().toArray(new PointsView[0]);
+  private void updatePoints3() {
+    _pt31D = _pt31DMap.keySet().toArray(new PointsView[0]);
+    _pt32D = _pt32DMap.keySet().toArray(new PointsView[0]);
+    _pt33D = _pt33DMap.keySet().toArray(new PointsView[0]);
   }
 
   private static float[][] convertToFloat(double[][] a) {
@@ -490,21 +595,35 @@ public class Viewer2D {
     return b;
   }
 
-  private class SliderListener implements ChangeListener {
+  private class PointSliderListener implements ChangeListener {
+    @Override
+    public void stateChanged(ChangeEvent e) {
+      JSlider source = (JSlider)e.getSource();
+      int i2 = source.getValue();
+      for (PointsView pt : _pt2)
+        pt.set(_s1,_pt2Map.get(pt)[i2]);
+      _i2 = i2;
+      _pp.removeTitle();
+      _pp.setTitle(_title+" "+_i2);
+      _vf.repaint();
+    }
+  }
+
+  private class PixelSliderListener implements ChangeListener {
     @Override
     public void stateChanged(ChangeEvent e) {
       JSlider source = (JSlider)e.getSource();
       int i3 = source.getValue();
-      for (PixelsView pv : _pvs)
+      for (PixelsView pv : _pv3)
         pv.set(_pv3Map.get(pv)[i3]);
-      for (PointsView pt : _pts)
-        pt.set(_s1,_ptMap.get(pt)[i3]);
-      for (PointsView pt : _pts122) {
-        float[][][] x1x2 = _pt122Map.get(pt);
+      for (PointsView pt : _pt31D)
+        pt.set(_s1,_pt31DMap.get(pt)[i3]);
+      for (PointsView pt : _pt32D) {
+        float[][][] x1x2 = _pt32DMap.get(pt);
         pt.set(x1x2[0][i3],x1x2[1][i3]);
       }
-      for (PointsView pt : _pts123) {
-        float[][][][] x1x2 = _pt123Map.get(pt);
+      for (PointsView pt : _pt33D) {
+        float[][][][] x1x2 = _pt33DMap.get(pt);
         pt.set(x1x2[0][i3],x1x2[1][i3]);
       }
       _i3 = i3;
