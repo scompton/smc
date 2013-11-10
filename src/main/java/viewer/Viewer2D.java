@@ -180,11 +180,13 @@ public class Viewer2D {
    * @param p
    * @param label the label for these points in the options menu,
    *  or {@code null} for no label.
+   * @param i2Label the label for the slice index displayed in the title,
+   *  or {@code null} for no label.
    * @return the points view.
    */
-  public PointsView addPoints(float[][] p, String label) {
+  public PointsView addPoints(float[][] p, String label, String i2Label) {
     Sampling s1 = new Sampling(p[0].length);
-    return addPoints(s1,p,label);
+    return addPoints(s1,p,label,i2Label);
   }
 
   /**
@@ -193,9 +195,13 @@ public class Viewer2D {
    * @param p
    * @param label the label for these points in the options menu,
    *  or {@code null} for no label.
+   * @param i2Label the label for the slice index displayed in the title,
+   *  or {@code null} for no label.
    * @return the points view.
    */
-  public PointsView addPoints(Sampling s1, float[][] p, String label) {
+  public PointsView addPoints(
+      Sampling s1, float[][] p, String label, String i2Label)
+  {
     if (_s1==null) {
       _s1 = s1;
       if (_orientation==Orientation.X1DOWN_X2RIGHT) {
@@ -211,6 +217,7 @@ public class Viewer2D {
     }
     int n2 = p.length;
     _i2 = n2/2;
+    _i2Label = i2Label==null ? "" : i2Label;
     PointsView pt = _pp.addPoints(_s1,p[_i2]);
     _vf.addOptions(pt,label);
     _pt2Map.put(pt,p);
@@ -428,7 +435,7 @@ public class Viewer2D {
     _vf.addToMenu(changeLimits);
     JPanel bottom = new JPanel();
     bottom.setLayout(new BorderLayout());
-    if (_pt2!=null) {
+    if (_pt2.length>0) {
       int n2 = _pt2Map.get(_pt2[0]).length;
       JSlider slider = makeSlider(_i2,n2);
       PointSliderListener sl = new PointSliderListener();
@@ -473,25 +480,25 @@ public class Viewer2D {
   private PlotPanel _pp;
 
   private Map<PixelsView,float[][]> _pv2Map = new HashMap<>();
-  PixelsView[] _pv2 = null;
+  PixelsView[] _pv2 = new PixelsView[0];
 
   private Map<PointsView,float[][]> _pt2Map = new HashMap<>();
-  PointsView[] _pt2 = null;
+  PointsView[] _pt2 = new PointsView[0];
 
   private Map<PixelsView,float[][][]> _pv3Map = new HashMap<>();
-  PixelsView[] _pv3 = null;
+  PixelsView[] _pv3 = new PixelsView[0];
 
   // For 1D x1 and x2 arrays for each slice of the 3D data.
   private Map<PointsView,float[][]> _pt31DMap = new HashMap<>();
-  PointsView[] _pt31D = null;
+  PointsView[] _pt31D = new PointsView[0];
 
   // For 2D x1 and x2 arrays for each slice of the 3D data.
   private Map<PointsView,float[][][]> _pt32DMap = new HashMap<>();
-  PointsView[] _pt32D = null;
+  PointsView[] _pt32D = new PointsView[0];
 
   // For 3D x1 and x2 for each slice of the 3D data.
   private Map<PointsView,float[][][][]> _pt33DMap = new HashMap<>();
-  PointsView[] _pt33D = null;
+  PointsView[] _pt33D = new PointsView[0];
 
   private Orientation _orientation;
   private Sampling _s1 = null;
@@ -502,6 +509,7 @@ public class Viewer2D {
   private double _vMin;
   private double _vMax;
   private String _title = "";
+  private String _i2Label = "";
   private int _i3 = Integer.MIN_VALUE;
   private int _i2 = Integer.MIN_VALUE;
 
@@ -550,7 +558,7 @@ public class Viewer2D {
             }
             float v;
             //FIXME this isn't accurate if there are multiple pixels views.
-            if (_pv2!=null)
+            if (_pv2.length>0)
               v = (_pv2Map.get(_pv2[0]))[i2][i1];
             else
               v = (_pv3Map.get(_pv3[0]))[_i3][i2][i1];
@@ -604,7 +612,7 @@ public class Viewer2D {
         pt.set(_s1,_pt2Map.get(pt)[i2]);
       _i2 = i2;
       _pp.removeTitle();
-      _pp.setTitle(_title+" "+_i2);
+      _pp.setTitle(_title+" "+_i2Label+" "+_i2);
       _vf.repaint();
     }
   }
