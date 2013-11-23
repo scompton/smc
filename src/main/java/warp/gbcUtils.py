@@ -182,7 +182,7 @@ def displayGBC(ppName="pp",ps1Name="ps1",ps2Name="ps2"):
 def plot1(fsA,s,x1x2=None,title=None,hLabel=None,vLabel=None,
           o=x1right_x2up,hLimits=None,vLimits=None,vFormat=None,hFormat=None,
           hInterval=None,vInterval=None,width=None,height=None,pngDir=None,
-          png1=None,png2=None,pngS=None,ptw=None,fw=1.0,fh=1.0):
+          png1=None,png2=None,pngS=None,ptw=None,cwp=True,fw=1.0,fh=1.0):
   if o==x1right_x2up:
     sp = SimplePlot()
   else:
@@ -217,13 +217,19 @@ def plot1(fsA,s,x1x2=None,title=None,hLabel=None,vLabel=None,
     sp.setSize(width,height)
   if pngDir and png1:
     if not ptw:
-      ptw = 222.0
+      if cwp:
+        ptw = 222.0
+      else:
+        ptw = 240.0
     print "ptw=%g"%ptw
     sp.setFontSizeForPrint(8.0,ptw)
     sp.paintToPng(720.0,3.08,pngDir+png1+".png")
   if pngDir and png2:
     if not ptw:
-      ptw = 469.0
+      if cwp:
+        ptw = 469.0
+      else:
+        ptw = 504.0
     print "ptw=%g"%ptw
     sp.setFontSizeForPrint(8.0,ptw)
     sp.paintToPng(720.0,6.51,pngDir+png2+".png")
@@ -231,13 +237,12 @@ def plot1(fsA,s,x1x2=None,title=None,hLabel=None,vLabel=None,
     sp.setFontSizeForSlide(fw,fh)
     sp.paintToPng(720.0,3.33,pngDir+pngS+".png")
 
-def plot2(f,g=None,pA=None,x12SingleA=None,x12=None,x22=None,
-          x12a=None,x12b=None,s1=None,s2=None,title=None,
-          hLabel="Crossline (km)",vLabel="",cbar="Amplitude",cbw=None,
-          cmap1=None,cmap2=None,clips1=None,clips2=None,width=600,height=800,
-          hLimits=None,vLimits=None,hInterval=None,vInterval=None,vFormat=None,
-          o=None,pngDir=None,png1=None,png2=None,pngS=None,ptw=None,fw=1.0,
-          fh=1.0,interp=None):
+def plot2(f,g=None,pA=None,x12SingleA=None,x12=None,x22=None,s1=None,s2=None,
+          title=None,hLabel="Crossline (km)",vLabel="",cbar="Amplitude",
+          cbw=None,cmap1=None,cmap2=None,clips1=None,clips2=None,width=600,
+          height=800,hLimits=None,vLimits=None,hInterval=None,vInterval=None,
+          vFormat=None,o=None,pngDir=None,png1=None,png2=None,pngS=None,
+          ptw=None,cwp=True,fw=1.0,fh=1.0,interp=None):
   v = Viewer2D(o)
   if s1==None:
     s1 = Sampling(len(f[0]))
@@ -262,10 +267,6 @@ def plot2(f,g=None,pA=None,x12SingleA=None,x12=None,x22=None,
       pt = v.addPoints(p[0],p[1])
       pt.setStyle(p[2])
       pt.setLineWidth(p[3])
-  if x12a:
-    v.addPoints(x12a[0],x12a[1],x12a[2],x12a[3])
-  if x12b:
-    v.addPoints(x12b[0],x12b[1],x12b[2],x12b[3])
   if x12SingleA:
     for i in range(len(x12SingleA)):
       x12Single = x12SingleA[i]
@@ -298,13 +299,19 @@ def plot2(f,g=None,pA=None,x12SingleA=None,x12=None,x22=None,
     v.setVFormat(vFormat)
   if pngDir and png1:
     if not ptw:
-      ptw = 222.0
+      if cwp:
+        ptw = 222.0
+      else:
+        ptw = 240.0
     print "ptw=%g"%ptw
     v.setFontSizeForPrint(8.0,ptw)
     v.paintToPng(720.0,3.08,pngDir+png1+".png")
   if pngDir and png2:
     if not ptw:
-      ptw = 469.0
+      if cwp:
+        ptw = 469.0
+      else:
+        ptw = 504.0
     print "ptw=%g"%ptw
     v.setFontSizeForPrint(8.0,ptw)
     v.paintToPng(720.0,6.51,pngDir+png2+".png")
@@ -430,8 +437,8 @@ def plotPP3(f,g=None,x1x2=None,s1=None,s2=None,s3=None,title="",label1="",
             limits1=None,limits2=None,limits3=None,vInterval0=None,
             vInterval1=None,hInterval0=None,hInterval1=None,o=None,slices=None,
             pngDir=None,png1=None,png2=None,pngS=None,cbw=None,coordMap=None,
-            ptw=None,fw=1.0,fh=1.0,lineColor=None,we0=None,we1=None,he0=None,
-            he1=None):
+            ptw=None,cwp=True,fw=1.0,fh=1.0,lineColor=None,we0=None,we1=None,
+            he0=None,he1=None):
   v = Viewer3P(s1,s2,s3,f,o)
   if we0:
     # v.setWidthElastic(0,we0)
@@ -491,13 +498,19 @@ def plotPP3(f,g=None,x1x2=None,s1=None,s2=None,s3=None,title="",label1="",
     v.setLimits3(limits3[0],limits3[1])
   if pngDir and png1:
     if not ptw:
-      ptw = 222.0
+      if cwp:
+        ptw = 222.0 # CWP
+      else:
+        ptw = 240.0 # Geophysics
     print "ptw=%g"%ptw
     v.setFontSizeForPrint(8.0,ptw)
     v.paintToPng(720.0,3.08,pngDir+png1+".png")
   if pngDir and png2:
     if not ptw:
-      ptw = 469.0
+      if cwp:
+        ptw = 469.0 # CWP
+      else:
+        ptw = 504.0 # Geophysics
     print "ptw=%g"%ptw
     v.setFontSizeForPrint(8.0,ptw)
     v.paintToPng(720.0,6.51,pngDir+png2+".png")

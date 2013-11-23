@@ -33,7 +33,7 @@ vpvsAvg = 1.9
 
 # Contstraints for time shift slopes, which are physically related to interval
 # Vp/Vs ratios. Compute slope parameters from vpvsMin/Max.
-vpvsMin,vpvsMax = 1.5,2.5
+vpvsMin,vpvsMax = 1.5,2.3
 r1min = (vpvsMin-1.0)/2
 r1max = (vpvsMax-1.0)/2
 
@@ -41,8 +41,8 @@ r1max = (vpvsMax-1.0)/2
 # images can be achieved by loosening these constraints, but I'm not sure that
 # we want to correct for all lateral variations seen in the PS image but not
 # in the PP image. These differences may not be related to Vp/Vs ratios.
-r2min,r2max,dg2 = -0.15,0.15,15
-r3min,r3max,dg3 = -0.15,0.15,15
+r2min,r2max,dg2 = -0.15,0.15,25
+r3min,r3max,dg3 = -0.15,0.15,25
 
 #############################################################################
 
