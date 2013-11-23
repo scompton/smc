@@ -433,26 +433,31 @@ public class Viewer2D {
       }
     });
     _vf.addToMenu(changeLimits);
+
+    // Possibly add a slider to pan through data
+    JSlider slider = null;
+    if (_pt2.length>0) { // array of points views
+      PointSliderListener sl = new PointSliderListener();
+      int n2 = _pt2Map.get(_pt2[0]).length;
+      slider = makeSlider(_i2,n2,sl);
+    } else if (_pv3Map.size()>0) { // array of pixels views
+      PixelSliderListener sl = new PixelSliderListener();
+      int n3 = _s3.getCount();
+      slider = makeSlider(_i3,n3,sl);
+    }
+
+    // add a bottom panel to the frame
     JPanel bottom = new JPanel();
     bottom.setLayout(new BorderLayout());
-    if (_pt2.length>0) {
-      int n2 = _pt2Map.get(_pt2[0]).length;
-      JSlider slider = makeSlider(_i2,n2);
-      PointSliderListener sl = new PointSliderListener();
-      slider.addChangeListener(sl);
+    if (slider!=null) {
       bottom.add(slider,BorderLayout.NORTH);
-    } else {
-      if (_pv3Map.size()>0) {
-        int n3 = _s3.getCount();
-        JSlider slider = makeSlider(_i3,n3);
-        PixelSliderListener sl = new PixelSliderListener();
-        slider.addChangeListener(sl);
-        bottom.add(slider,BorderLayout.NORTH);
-      }
+    }
+    if (_pv2.length>0 || _pv3.length>0) { // add mouse tracking for pixels
       JTextArea text = addMouseTracker();
       bottom.add(text,BorderLayout.SOUTH);
     }
     _vf.add(bottom,BorderLayout.SOUTH);
+
     _vf.setVisible(true);
   }
 
@@ -513,13 +518,14 @@ public class Viewer2D {
   private int _i3 = Integer.MIN_VALUE;
   private int _i2 = Integer.MIN_VALUE;
 
-  private JSlider makeSlider(int i, int n) {
+  private JSlider makeSlider(int i, int n, ChangeListener cl) {
     DefaultBoundedRangeModel brm = new DefaultBoundedRangeModel(i,0,0,n-1);
     JSlider slider = new JSlider(brm);
     slider.setMajorTickSpacing(n/10);
     slider.setMinorTickSpacing(n/150);
     slider.setPaintLabels(true);
     slider.setPaintTicks(true);
+    slider.addChangeListener(cl);
     return slider;
   }
 
