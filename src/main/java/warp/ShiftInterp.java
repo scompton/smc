@@ -3,12 +3,11 @@ package warp;
 import edu.mines.jtk.dsp.Sampling;
 import edu.mines.jtk.interp.*;
 
-/*package*/ class ShiftInterp {
+public class ShiftInterp {
 
   /**
    * Constants for interpolation.
    */
-  // /*package*/ enum Method {
   public enum Method {
     LINEAR,
     MONOTONIC,
@@ -18,12 +17,12 @@ import edu.mines.jtk.interp.*;
   /**
    * Default constructor.
    */
-  /*package*/ ShiftInterp() {}
+  public ShiftInterp() {}
 
   /**
    * Set the interpolation method for this instance.
    */
-  /*package*/ void setMethod(Method method) {
+  public void setMethod(Method method) {
     _method = method;
   }
 
@@ -36,7 +35,7 @@ import edu.mines.jtk.interp.*;
    * @param u sparse shifts.
    * @return the interpolated shifts.
    */
-  /*package*/ float[] interpolate(Sampling s, float[] g, float[] u) {
+  public float[] interpolate(Sampling s, float[] g, float[] u) {
     int ng = g.length;
     int n = s.getCount();
     float[] ui = new float[n];
@@ -72,7 +71,7 @@ import edu.mines.jtk.interp.*;
    * @param u sparse shifts.
    * @return the interpolated shifts ui[n2][n1].
    */
-  /*package*/ float[][] interpolate(
+  public float[][] interpolate(
       Sampling s1, Sampling s2, float[][] g1, float[] g2, float[][] u)
   {
     CubicInterpolator.Method m2 = CubicInterpolator.Method.LINEAR;
@@ -133,7 +132,7 @@ import edu.mines.jtk.interp.*;
    *  (slow) dimensions.
    * @return the interpolated shifts ui[_n3][_n2][_ne1].
    */
-  /*package*/ float[][][] interpolate(
+  public float[][][] interpolate(
       Sampling s1, Sampling s2, Sampling s3,
       float[][][] g1, float[] g2, float[] g3, float[][][] u)
   {
