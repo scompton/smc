@@ -621,9 +621,9 @@ public class DynamicWarpingC {
     startProgressThread(pt);
 
     // Smooth1
-    Stopwatch s = new Stopwatch();
-    s.start();
-    print("Smoothing 1st dimension...");
+    //Stopwatch s = new Stopwatch();
+    //s.start();
+    //print("Smoothing 1st dimension...");
     final float[][][] es1 = new float[n2][ng1][nu];
     final Parallel.Unsafe<float[][]> eu = new Parallel.Unsafe<>();
     final Parallel.Unsafe<float[]> fiu = new Parallel.Unsafe<>();
@@ -650,14 +650,14 @@ public class DynamicWarpingC {
       es1[i2] = smoothErrors(e,r1Min,r1Max,g1i[i2]);
       pt.worked();
     }});
-    print("Finished 1st dimension smoothing in "+s.time()+" seconds");
+    //print("Finished 1st dimension smoothing in "+s.time()+" seconds");
     normalizeErrors(es1);
 
     // Smooth2
-    s.restart();
-    print("Smoothing 2nd dimension...");
+    //s.restart();
+    //print("Smoothing 2nd dimension...");
     final float[][][] es = smoothErrors2(es1,r2Min,r2Max,g2i,pt);
-    print("Finished 2nd dimension smoothing in "+s.time()+" seconds");
+    //print("Finished 2nd dimension smoothing in "+s.time()+" seconds");
     normalizeErrors(es);
 
     // Find shifts on coarse grid
@@ -791,9 +791,9 @@ public class DynamicWarpingC {
     startProgressThread(pt);
 
     // Smooth1
-    Stopwatch s = new Stopwatch();
-    s.start();
-    print("Smoothing 1st dimension...");
+    //Stopwatch s = new Stopwatch();
+    //s.start();
+    //print("Smoothing 1st dimension...");
     final float[][][][] es1 = new float[n3][n2][ng1][nu];
     final Parallel.Unsafe<float[][]> eu = new Parallel.Unsafe<>();
     final Parallel.Unsafe<float[]> fiu = new Parallel.Unsafe<>();
@@ -823,22 +823,22 @@ public class DynamicWarpingC {
       es1[i3][i2] = smoothErrors(e,r1Min,r1Max,g1i[i3][i2]);
       pt.worked();
     }});
-    print("Finished 1st dimension smoothing in "+s.time()+" seconds");
+    //print("Finished 1st dimension smoothing in "+s.time()+" seconds");
     normalizeErrors(es1);
 
     // Smooth 2
-    s.restart();
-    print("Smoothing 2nd dimension...");
+    //s.restart();
+    //print("Smoothing 2nd dimension...");
     final float[][][][] es12 = smoothErrors2(es1,r2Min,r2Max,g2i,pt);
-    print("Finished 2nd dimension smoothing in "+s.time()+" seconds");
+    //print("Finished 2nd dimension smoothing in "+s.time()+" seconds");
     normalizeErrors(es12);
 
     // Smooth 3
-    s.restart();
-    print("Smoothing 3rd dimension...");
+    //s.restart();
+    //print("Smoothing 3rd dimension...");
     final float[][][][] es = smoothErrors3(es12,r3Min,r3Max,g3i,pt);
     normalizeErrors(es);
-    print("Finished 3rd dimension smoothing in "+s.time()+" seconds");
+    //print("Finished 3rd dimension smoothing in "+s.time()+" seconds");
 
     // Find shifts on coarse grid
     final float[][][] u = new float[ng3][ng2][];
@@ -1330,6 +1330,8 @@ public class DynamicWarpingC {
               Thread.currentThread().interrupt();
             }
           }
+          int wu = pt.getCompletedWorkUnits();
+          _wwt.worked(wu-wus);
         }
       });
       thread.start();
