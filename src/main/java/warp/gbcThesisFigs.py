@@ -28,7 +28,6 @@ r3min,r3max,dg3 = -0.15,0.15,30
 r1min = (vpvsMin-1.0)/2
 r1max = (vpvsMax-1.0)/2
 
-
 vClips = [vpvsMin,vpvsMax]
 iClips = [-1.5,1.5]
 uClips = [0.0,0.75]
@@ -47,17 +46,17 @@ def main(args):
   dw = DynamicWarpingC.fromVpVs(s1,s1ps,vpvsAvg,0.0,s2,s3)
   setGlobals(dw)
   #printConstraints()
-  #makeREG(s1,pp,dg1REG)
-  #makeSAG(s1,pp,dg1SAG,ng1SAG)
-  goSmooth3D(s1,pp,s1ps,ps1,dw)
-  go3D(s1,pp,s1ps,ps1,dw)
-  #makePpPs1(pp,ps1)
-  #makeTeaserFigures(dw,pp)
+  makeREG(s1,pp,dg1REG) # make PP with REG grid image
+  makeSAG(s1,pp,dg1SAG,ng1SAG) # make PP with SAG grid image
+  goSmooth3D(s1,pp,s1ps,ps1,dw) # find shifts w/ smooth dw
+  #go3D(s1,pp,s1ps,ps1,dw) # find shifts w/ orig dw
+  #makePpPs1(pp,ps1) # make PP and PS1 image
   #makeFNEvsSAGErrors(dw,pp,ps1)
-  #makeFNEvsSAGWarp(dw,pp,ps1)
+  #makeFNEvsSAGWarp(pp,ps1)
   #makeFNEVpvs(dw,pp)
   #makeSAGVpvs(dw,pp,ps1)
-  #make1DErrors(pp,ps1)
+  #make1DErrors(dw,pp,ps1)
+
   #makeFlatPlots(dw,pp)
   #makeREGGridAndVpvs(dw,pp)
   #makeSAGGridAndVpvs(dw,pp)
@@ -89,16 +88,16 @@ def go3D(sf,f,sg,g,dw):
 def goSmooth3D(sf,f,sg,g,dw):
   dw.setStrainLimits(r1min,r1max,r2min,r2max,r3min,r3max)
   dw.setInterpolationMethod(Method.LINEAR)
+  dw.setWorkTracker(WarperProgress())
   g2 = getG1D(s2,n2,dg2)
   g3 = getG1D(s3,n3,dg3)
   def goShifts(g1,label):
     u = dw.findShifts(sf,f,sg,g,g1,g2,g3)
     checkShifts3(u)
     writeImage(threeDDir,"u_"+label,u)
-  g1r = getG1D(se,ne1,dg1)
-  g1r = getG3D(g1)
+  g1r = getG1D(se,ne1,dg1REG)
+  g1r = getG3D(g1r)
   g1s = getG1SAG(sf.getDelta(),dg1SAG,ng1SAG)
-  goShifts(g1f,"fne")
   goShifts(g1r,"reg_linear")
   goShifts(g1s,"sag_linear")
   dw.setInterpolationMethod(Method.MONOTONIC)
@@ -112,22 +111,6 @@ def getImages3DSmooth():
   # plotPP3(ps1,title="PS1",s1=s1ps,s2=s2,s3=s3,clips1=iClips,slices=slices,
   #         label1="PS time (s)",vInterval1=0.2,cmap1=iMap,cbw=100)
   return pp,ps1
-
-def printConstraints():
-  k1min = int(math.ceil( r1min*dg1))
-  k1max = int(math.floor(r1max*dg1))
-  k2min = int(math.ceil( r2min*dg2))
-  k2max = int(math.floor(r2max*dg2))
-  k3min = int(math.ceil( r3min*dg3))
-  k3max = int(math.floor(r3max*dg3))
-  info = """Constraints:
-  r1min=%g, r1max=%g, dg1=%g, k1min=%g, k1max=%g
-  r2min=%g, r2max=%g, dg2=%g, k2min=%g, k2max=%g
-  r3min=%g, r3max=%g, dg3=%g, k3min=%g, k3max=%g"""%(r1min,r1max,dg1,k1min,
-                                                     k1max,r2min,r2max,dg2,
-                                                     k2min,k2max,r3min,r3max,
-                                                     dg3,k3min,k3max)
-  print info
 
 def makePpPs1(pp,ps1):
   ppSlices = [348,75,72]
@@ -148,138 +131,71 @@ def makePpPs1(pp,ps1):
           png2="ps1",ptw=ptw,he0=he0,limits1=[0.0,2.8],limits2=xl,limits3=yl,
           cbw=cbw,lineColor=Color.YELLOW)
 
-def makeTeaserFigures(dw,pp):
-  label = "sag_ng"
-  dg1 = 50
-  ng = 13
-  k3 = 78
-  slices = [k1,k2,k3]
-  zm = ZeroMask(pp)
-  x1m = readImage(threeDDir,"x1",ne1,n2,n3)
-  ff = readImage(threeDDir,"ff",ne1,n2,n3)
-  g1,g1Flat,g2,g3 = makeAutomaticGrid(x1m,ff,dw,dg1,ng=ng)
-  # read sparse shifts from disk
-  u = readImage(threeDDir,"u_"+label,len(g1Flat),len(g2),len(g3))
-  print "u: min=%g, max=%g:"%(min(u),max(u))
-  # Linear interpolation
-  # uLinear = DynamicWarpingC.interpolate(ne1,n2,n3,g1Flat,g2,g3,u,x1m,True)
-  uLinear = DynamicWarpingC.interpolate(ne1,n2,n3,g1Flat,g2,g3,u,x1m,
-                                        Interp.LINEAR,Interp.LINEAR)
-  print "checking linear shifts:",checkShifts3(uLinear)
-  print "uLinear: min=%9.3g, max=%5.3g:"%(min(uLinear),max(uLinear))
-  pswLinear = dw.applyShifts(uLinear)
-  vpvsLinear = DynamicWarpingC.vpvs(uLinear)
-  vpvsLinear = DynamicWarpingC.extrapolate(vpvsLinear,len(pp[0][0]))
-  zm.apply(0.00,vpvsLinear)
-  # Cubic interpolation
-  uCubic = DynamicWarpingC.interpolate(ne1,n2,n3,g1Flat,g2,g3,u,x1m,
-                                       Interp.MONOTONIC,Interp.LINEAR)
-  print "checking monotonic shifts:",checkShifts3(uCubic)
-  print "uCubic: min=%9.3g, max=%5.3g:"%(min(uCubic),max(uCubic))
-  pswCubic = dw.applyShifts(uCubic)
-  vpvsCubic = DynamicWarpingC.vpvs(uCubic)
-  vpvsCubic = DynamicWarpingC.extrapolate(vpvsCubic,len(pp[0][0]))
-  zm.apply(0.00,vpvsCubic)
-  ptw = 469.0/3
-  cbw = 114
-  plot2(pp[k3],s1=s1,s2=s2,vLabel="PP time (s)",hLimits=xl,vLimits=el,
-        pngDir=pngDir,png1="teaser_pp_2D",ptw=ptw,cbw=cbw)
-  plot2(pswLinear[k3],s1=s1,s2=s2,vLabel="PP time (s)",vLimits=el,
-        pngDir=pngDir,png1="teaser_ps1w_2D_linear",ptw=ptw,cbw=cbw)
-  plot2(pswCubic[k3],s1=s1,s2=s2,vLabel="PP time (s)",vLimits=el,
-        pngDir=pngDir,png1="teaser_ps1w_2D_cubic",ptw=ptw,cbw=cbw)
-  plot2(vpvsLinear[k3],s1=s1,s2=s2,vLabel="PP time (s)",
-        cbar="Interval Vp/Vs ratio",cmap1=jet,clips1=vClips,vLimits=el,
-        pngDir=pngDir,png1="teaser_vpvs_2D_linear",ptw=ptw,cbw=cbw)
-  plot2(vpvsCubic[k3],s1=s1,s2=s2,vLabel="PP time (s)",
-        cbar="Interval Vp/Vs ratio",cmap1=jet,clips1=vClips,vLimits=el,
-        pngDir=pngDir,png1="teaser_vpvs_2D_cubic",ptw=ptw,cbw=cbw)
-
 def makeFNEvsSAGErrors(dw,pp,ps1):
-  label = "fne"
-  uFNE = readImage(threeDDir,"u_"+label,ne1,n2,n3)
+  k2,k3 = 30,78
+  uFNE = readImage(threeDDir,"u_fne",n1,n2,n3)
+  uSAG = readImage(threeDDir,"u_sag_monotonic",n1,n2,n3)
+  uFNE = uFNE[k3][k2]
+  uSAG = uSAG[k3][k2]
   ref = RecursiveExponentialFilter(sigma)
   uFNEs = copy(uFNE)
   ref.apply(uFNEs,uFNEs)
-  ptw = 222.0
-  k2,k3 = 30,78
-  label = "sag_ng"
-  x1m = readImage(threeDDir,"x1",ne1,n2,n3)
-  ff = readImage(threeDDir,"ff",ne1,n2,n3)
-  dg1 = 50
-  ng = 13
-  g1,g1Flat,g2,g3 = makeAutomaticGrid(x1m,ff,dw,dg1,ng=ng)
-  uSAG = readImage(threeDDir,"u_"+label,len(g1Flat),len(g2),len(g3))
-  uSAG = DynamicWarpingC.interpolate(ne1,n2,n3,g1Flat,g2,g3,uSAG,x1m,
-                                     Interp.MONOTONIC,Interp.LINEAR)
-  print "checking shifts:",checkShifts3(uSAG)
-  print "uSAG: min=%9.3g, max=%5.3g:"%(min(uSAG),max(uSAG))
-  #uFNE = mul(uFNE[k3],d1)
-  #uFNEs = mul(uFNEs[k3],d1)
-  #uSAG = mul(uSAG[k3],d1)
-  #p = [uFNE,"FNE","w-",2.0]
-  #p2 = [uFNEs,"FNE smooth","c--",2.0]
-  #p3 = [uSAG,"SAG","r--",2.0]
-  #dw2 = DynamicWarpingC(pp[k3],ps1[k3],vpvsAvg)
-  #e = dw2.computeErrors2()
-  #e = DynamicWarpingC.transposeLag12(e)
-  #DynamicWarpingC.normalizeErrors(e)
-  #plot3(e,p=p,p2=p2,p3=p3,s1=se,s2=su,hLabel="PP time (s)",
-  #      vLabel="Time shift (s)",cbar=None,clips1=[0,0.15],width=900,height=600,
-  #      hLimits=el,vLimits=ul,o=x1right_x2up)
-  uFNE = mul(uFNE[k3][k2],d1)
-  uFNEs = mul(uFNEs[k3][k2],d1)
-  uSAG = mul(uSAG[k3][k2],d1)
-  p = [uFNE,"FNE","w-",4.0]
-  p2 = [uFNEs,"FNE smooth","c--",4.0]
-  p3 = [uSAG,"SAG","y--",4.0]
-  dw1 = DynamicWarpingC(pp[k3][k2],ps1[k3][k2],vpvsAvg)
-  e1 = dw1.computeErrors()
-  e1 = DynamicWarpingC.transposeLag(e1)
-  DynamicWarpingC.normalizeErrors(e1)
-  plot2(e1,p=p,p2=p2,p3=p3,s1=se,s2=su,hLabel="PP time (s)",vInterval=0.1,
-        vLabel="Time shift (s)",cbar=None,clips1=[0,0.3],width=1064,height=536,
+  pA = [[copy(ne1,uFNE),"FNE","w-",4.0],
+        [copy(ne1,uFNEs),"FNE smooth","c--",4.0],
+        [copy(ne1,uSAG),"SAG","y--",4.0]]
+  e = dw.computeErrors(s1,pp[k3][k2],s1ps,ps1[k3][k2])
+  e = Transpose.transpose12(e)
+  WarpUtils.normalizeErrors(e)
+  plot2(e,pA=pA,s1=se,s2=su,hLabel="PP time (s)",vInterval=0.1,
+        vLabel="Time shift (s)",cbar=None,clips1=[0,0.3],width=1109,height=536,
         hLimits=[0.0,1.0],vLimits=[0.0,0.4],o=x1right_x2up,pngDir=pngDir,
-        png1="eFneVsSag",ptw=ptw)
+        png2="eFneVsSag",cwp=False)
+
+def makeFNEvsSAGWarp(pp,ps1):
+  slices = [190,30,78]
+  uFNE = readImage(threeDDir,"u_fne",n1,n2,n3)
+  uSAG = readImage(threeDDir,"u_sag_monotonic",n1,n2,n3)
+  ref = RecursiveExponentialFilter(sigma)
+  uFNEs = copy(uFNE)
+  ref.apply(uFNEs,uFNEs)
+  pswFNE = WarpUtils.applyShifts(s1,uFNEs,s1ps,ps1)
+  pswSAG = WarpUtils.applyShifts(s1, uSAG,s1ps,ps1)
+  l1,l2,l3 = [0.0,1.0],[0.5,4.0],[0.5,4.0]
+  ptw = 504/3.0
+  def plot(f,pngName):
+    plotPP3(f,s1=s1,s2=s2,s3=s3,clips1=iClips,cmap1=iMap,cbar=None,
+            label1="PP time (s)",limits1=l1,limits2=l2,limits3=l3,
+            slices=slices,width=778,height=1000,ptw=ptw,he0=he0,pngDir=pngDir,
+            png1=pngName)
+  plot(pp,"pp_zoom")
+  plot(pswFNE,"pswFNE_zoom")
+  plot(pswSAG,"pswSAG_zoom")
 
 def makeFNEVpvs(dw,pp):
-  label = "fne"
-  u = readImage(threeDDir,"u_"+label,ne1,n2,n3)
+  u = readImage(threeDDir,"u_fne",n1,n2,n3)
   ref = RecursiveExponentialFilter(sigma)
   us = copy(u)
   ref.apply(us,us)
-  ptw = 469.0/2
+  ptw = 504.0/2
   cbw = 100
   w = 830
   h = 1000
   slices = [490,30,78]
   zm = ZeroMask(pp)
-  vpvs = DynamicWarpingC.vpvs(us)
-  vpvs = DynamicWarpingC.extrapolate(vpvs,len(pp[0][0]))
+  vpvs = WarpUtils.vpvs(s1,us)
   print "vpvsFNE: min=%g, max=%g"%(min(vpvs),max(vpvs))
   zm.apply(0.00,vpvs)
   plotPP3(vpvs,s1=s1,s2=s2,s3=s3,clips1=vClips,label1="PP time (s)",
           cbar="Interval Vp/Vs ratio",cmap1=jet,cbw=cbw,width=w,height=h,
-          limits1=el,slices=slices,ptw=ptw,pngDir=pngDir,png1="vpvsFNE")
+          limits1=el,slices=slices,ptw=ptw,he0=he0,pngDir=pngDir,png1="vpvsFNE")
 
 def makeSAGVpvs(dw,pp,ps1):
-  label = "sag_ng"
-  #dw.setWorkTracker(WarperProgressBar())
-  dw.setStrainLimits(r1min,r1max,r2min,r2max,r3min,r3max)
-  x1m = readImage(threeDDir,"x1",ne1,n2,n3)
-  ff = readImage(threeDDir,"ff",ne1,n2,n3)
-  dg1 = 50
-  ng = 13
-  g1,g1Flat,g2,g3 = makeAutomaticGrid(x1m,ff,dw,dg1,ng=ng)
-  u = dw.findShifts(s1,pp,s1ps,ps1,g1,g2,g3)
-  #u = readImage(threeDDir,"u_"+label,len(g1Flat),len(g2),len(g3))
-  print "u: min=%g, max=%g:"%(min(u),max(u))
-  print "checking shifts:",checkShifts3(u)
-  print "u: min=%9.3g, max=%5.3g:"%(min(u),max(u))
+  u = readImage(threeDDir,"u_sag_monotonic",n1,n2,n3)
+  #u = readImage(threeDDir,"u_sag_linear",n1,n2,n3)
+  ptw = 504.0/2
   cbw = 100
   w = 830
   h = 1000
-  he0=320
   slices = [490,30,78]
   zm = ZeroMask(pp)
   vpvs = WarpUtils.vpvs(s1,u)
@@ -287,55 +203,48 @@ def makeSAGVpvs(dw,pp,ps1):
   zm.apply(0.00,vpvs)
   plotPP3(vpvs,s1=s1,s2=s2,s3=s3,clips1=vClips,label1="PP time (s)",
           cbar="Interval Vp/Vs ratio",cmap1=jet,cbw=cbw,width=w,height=h,
-          he0=he0,limits1=el,slices=slices,pngDir=pngDir,png1="vpvsSAG")
+          ptw=ptw,he0=he0,limits1=el,slices=slices,pngDir=pngDir,png1="vpvsSAG")
 
-def make1DErrors(pp,ps1):
-  dg1 = 80
+def make1DErrors(dw,pp,ps1):
   k2,k3 = 28,72
   pp1,ps11 = pp[k3][k2],ps1[k3][k2]
-  dw = DynamicWarpingC.fromVpVs(s1,s1ps,vpvsAvg,0.0)
+  r1min = (1.4-1.0)/2
   dw.setStrainLimits(r1min,r1max)
   e = dw.computeErrors(s1,pp1,s1ps,ps11)
   e = Transpose.transpose12(e)
   WarpUtils.normalizeErrors(e)
-  g1REG = Subsample.subsample(ne1,dg1)
-  g1REG = Subsample.indicesToSampling(s1,g1REG)
-  ngREG = len(g1REG)
+  g1REG = getG1D(se,ne1,dg1REG)
   ppSub = copy(ne1,pp1)
   env = getEnvelope(ppSub,ne1);
-  g1SAG = Subsample.subsample(env,50,13)
+  g1SAG = Subsample.subsample(env,dg1SAG,ng1SAG)
   g1SAG = Subsample.indicesToSampling(s1,g1SAG)
-  ngSAG = len(g1SAG)
   uREG = dw.findShifts(s1,pp1,s1ps,ps11,g1REG)
-  x1REG = zerofloat(ngREG)
-  x2REG = zerofloat(ngREG)
-  for i1 in range(ngREG):
-    x1REG[i1] = g1REG[i1]
-    g1i = s1.indexOfNearest(g1REG[i1])
-    x2REG[i1] = uREG[g1i]
+  uSAG = dw.findShifts(s1,pp1,s1ps,ps11,g1SAG)
+  def getShiftCoords(g1,u):
+    n = len(g1)
+    x1,x2 = zerofloat(n),zerofloat(n)
+    for i in range(n):
+      x1[i] = g1[i]
+      g1i = s1.indexOfNearest(g1[i])
+      x2[i] = u[g1i]
+    return x1,x2
+  x1REG,x2REG = getShiftCoords(g1REG,uREG)
+  x1SAG,x2SAG = getShiftCoords(g1SAG,uSAG)
   h = 600
   w = 1133
-  plot2(e,s1=se,s2=su,hLabel="PP time (s)",vLabel="Time shift (s)",
-        clips1=[0,0.3],width=w,height=h,hLimits=el,vLimits=ul,
-        o=x1right_x2up,pngDir=pngDir,png2="e_1D",cwp=False,vInterval=0.2,
-        hInterval=0.2,cbar=None)
-  uSAG = dw.findShifts(s1,pp1,s1ps,ps11,g1SAG)
-  x1SAG = zerofloat(ngSAG)
-  x2SAG = zerofloat(ngSAG)
-  for i1 in range(ngSAG):
-    x1SAG[i1] = g1SAG[i1]
-    g1i = s1.indexOfNearest(g1SAG[i1])
-    x2SAG[i1] = uSAG[g1i]
   pA = [[copy(ne1,uSAG),"u-sag","y-.",4.0],[copy(ne1,uREG),"u-reg","c--",4.0]]
   x12SingleA = [[x1SAG,x2SAG,"sag","yS",18.0],[x1REG,x2REG,"reg","cO",18.0]]
   fsa = [[ppSub,"k-"],[env,"r-"]]
   plot1(fsa,se,hLabel="PP time (s)",vLabel="Amplitude",hLimits=el,
         vFormat="%11f",width=w,height=400,pngDir=pngDir,png2="envelope",
         cwp=False,vInterval=1.0)
-  plot2(e,pA=pA,x12SingleA=x12SingleA,s1=se,s2=su,hLabel="PP time (s)",
-        vLabel="Time shift (s)",clips1=[0,0.3],width=w,height=h,hLimits=el,
-        vLimits=ul,o=x1right_x2up,pngDir=pngDir,png2="e_1D_sag_reg",cwp=False,
-        vInterval=0.2,hInterval=0.2,cbar=None)
+  def plotE(pngName,pA=None,x12SingleA=None):
+    plot2(e,pA=pA,x12SingleA=x12SingleA,s1=se,s2=su,hLabel="PP time (s)",
+          vLabel="Time shift (s)",clips1=[0,0.3],width=w,height=h,hLimits=el,
+          vLimits=ul,o=x1right_x2up,pngDir=pngDir,png2=pngName,cwp=False,
+          vInterval=0.2,hInterval=0.2,cbar=None)
+  plotE("e_1D")
+  plotE("e_1D_sag_reg",pA,x12SingleA)
 
 def makeFlatPlots(dw,pp):
   ff = readImage(threeDDir,"ff",ne1,n2,n3) # flattened image

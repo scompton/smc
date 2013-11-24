@@ -161,6 +161,7 @@ def goShiftsSAG(sf,f,sg,g,dw,dg1,ng,fname,gname):
 
 def goShifts(sf,f,sg,g,g1,g2,dw,fname,gname,desc):
   dw.setInterpolationMethod(Method.MONOTONIC)
+  dw.setWorkTracker(WarperProgress())
   u = dw.findShifts(sf,f,sg,g,g1,g2)
   checkShifts2(u)
   une1 = copy(ne1,n2,u)
