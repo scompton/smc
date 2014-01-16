@@ -452,7 +452,7 @@ def plotErrors(ppw,ps1,dw,uA,desc,x12SliceA=None):
   plot3(e,pA=uA,x12SliceA=x12SliceA,title="AE"+desc,s1=se,s2=su,
         hLabel="PP time (s)",vLabel="Vertical shift (s)",cbar="Error",
         clips1=[0,0.15],width=900,height=600,hLimits=el,vLimits=ul,
-        o=x1right_x2up)
+        o=x1rx2u)
 
 ###############################################################################
 run(main)

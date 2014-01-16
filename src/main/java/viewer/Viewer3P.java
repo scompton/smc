@@ -476,9 +476,12 @@ public class Viewer3P {
       int nl3 = l13.size();
       float[][] x232 = new float[nl3][nl2];
       float[][] x233 = new float[nl3][nl2];
-      for (int i=0; i<nl3; i++) {
-        x232[i][i] = l12.get(i);
-        x233[i][i] = l13.get(i);
+      for (int i3=0; i3<nl3; i3++) {
+        float v3 = l13.get(i3);
+        for (int i2=0; i2<nl2; i2++) {
+          x232[i3][i2] = l12.get(i2);
+          x233[i3][i2] = v3;
+        }
       }
       i1Map.put(i1,new float[][][]{x232,x233});
     }
@@ -573,7 +576,7 @@ public class Viewer3P {
       _pp.setHLimits(1,min,max);
       //TODO this method is in my forked JTK, but I don't want to
       // force this dependency. Comment out for now.
-//      _pp.setVLimits(0,min,max,PlotPanel.Orientation.X1RIGHT_X2UP);
+      _pp.setVLimits(0,min,max,PlotPanel.Orientation.X1RIGHT_X2UP);
     } else if (_orientation==Orientation.X1DOWN_X3RIGHT) {
       _pp.setHLimits(0,min,max);
     } else if (_orientation==Orientation.X1RIGHT_X2UP) {
@@ -664,7 +667,7 @@ public class Viewer3P {
 
   public static void main(String[] args) throws IOException {
     if (args.length != 4) {
-      System.out.println("usage: java Viewer datasetPath n1 n2 n3");
+      print("usage: java Viewer datasetPath n1 n2 n3");
       System.exit(0);
     }
     ArrayInputStream ais = new ArrayInputStream(args[0]);
@@ -737,7 +740,7 @@ public class Viewer3P {
     float[][][] i3Floats = _i3Map.get(_k3);
 //    System.out.printf("k1=%d, k2%d, k3=%d%n,",_k1,_k2,_k3);
     if (i1Floats!=null) {
-//      System.out.println("found i1floats at k1="+_k1);
+      //print("found i1floats at k1="+_k1);
       if (_pts[2]==null) {
         PointsView pt23 = _pp.addPoints(0,0,i1Floats[1],i1Floats[0]);
 //        pt23 = _pp.addPoints(0,0,i1Floats[0],i1Floats[1]);
@@ -755,7 +758,7 @@ public class Viewer3P {
     }
 
     if (i2Floats!=null) {
-//      System.out.println("found i2floats at k2="+_k2);
+      //print("found i2floats at k2="+_k2);
       if (_pts[1]==null) {
         PointsView pt13 = _pp.addPoints(1,1,i2Floats[0],i2Floats[1]);
         pt13.setStyle("rO");
@@ -772,7 +775,7 @@ public class Viewer3P {
     }
 
     if (i3Floats!=null) {
-//      System.out.println("found i3floats at k3="+_k3);
+      //print("found i3floats at k3="+_k3);
       if (_pts[0]==null) {
         PointsView pt12 = _pp.addPoints(1,0,i3Floats[0],i3Floats[1]);
         pt12.setStyle("rO");
@@ -798,7 +801,7 @@ public class Viewer3P {
 //    float[][] i3Floats = _i3Map.get(_k3);
 //    System.out.printf("k1=%d, k2%d, k3=%d%n,",_k1,_k2,_k3);
     if (i1Floats!=null) {
-//      System.out.println("found i1floats at k1="+_k1);
+//      print("found i1floats at k1="+_k1);
 //      if (_pts[2]==null) {
 //        PointsView pt23 = _pp.addPoints(0,0,i1Floats[0],i1Floats[1]);
 //        pt23 = _pp.addPoints(0,0,i1Floats[0],i1Floats[1]);
@@ -816,7 +819,7 @@ public class Viewer3P {
     }
 
 //    if (i2Floats!=null) {
-////      System.out.println("found i2floats at k2="+_k2);
+////      print("found i2floats at k2="+_k2);
 //      if (_pts[1]==null) {
 //        PointsView pt13 = _pp.addPoints(1,1,i2Floats[0],i2Floats[1]);
 //        pt13.setStyle("rO");
@@ -833,7 +836,7 @@ public class Viewer3P {
 //    }
 
 //    if (i3Floats!=null) {
-////      System.out.println("found i3floats at k3="+_k3);
+////      print("found i3floats at k3="+_k3);
 //      if (_pts[0]==null) {
 //        PointsView pt12 = _pp.addPoints(1,0,i3Floats[0],i3Floats[1]);
 //        pt12.setStyle("rO");
@@ -866,6 +869,10 @@ public class Viewer3P {
     float[][] f23 = new float[_n3][_n2];
     sf3.get23(_n2,_n3,_k1,0,0,f23);
     return (_transpose23)?transpose(f23):f23;
+  }
+
+  private static void print(String s) {
+    System.out.println(s);
   }
 
   private class SliceMode extends Mode {

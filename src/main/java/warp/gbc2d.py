@@ -82,13 +82,13 @@ def goErrorTest():
   WarpUtils.normalizeErrors(e)
   plot3(e,title="Alignment Errors",s1=se,s2=su,hLabel="PP time (s)",
         vLabel="Vertical shift (s)",cbar="Error",clips1=[0,0.15],width=900,
-        height=600,hLimits=el,vLimits=ul,o=x1right_x2up)
+        height=600,hLimits=el,vLimits=ul,o=x1rx2u)
   es = dw.computeErrorsSum2(pp,ps1)
   es = WarpUtils.transposeLag(es)
   WarpUtils.normalizeErrors(es)
   plot2(es,title="Alignment Errors Stack",s1=se,s2=su,hLabel="PP time (s)",
         vLabel="Vertical shift (s)",cbar="Error",clips1=[0,0.6],width=900,
-        height=600,hLimits=el,vLimits=ul,o=x1right_x2up)
+        height=600,hLimits=el,vLimits=ul,o=x1rx2u)
 
 def getPpPs1Data():
   # pp,ps1 = getImages2D() # FKK and AGC
@@ -170,6 +170,8 @@ def goShifts(sf,f,sg,g,g1,g2,dw,fname,gname,desc):
   uA = [[une1,"u","w-",2.0]]
   plotErrors(sf,f,sg,g,dw,uA,desc,fname,x12SliceA=x12SliceA)
   x1i,x2i = getSparseGridCoords(g1,g2)
+  dump(x1i)
+  dump(x2i)
   plotGrid(f,x1i,x2i,fname)
   plotWarped(sf,f,sg,g,u,desc,fname,gname)
   plotVpvs(f,u,desc,fname)
@@ -288,7 +290,7 @@ def test1DKS(ppw,ps1,dw,g1,p1s1tA,su,se,s2):
     # WarpUtils.normalizeErrors(ef,-Float.MAX_VALUE,Float.MAX_VALUE)
     # plot2(ef,title="Accumulate forward i2=%d"%i2,s2=su,
     #       hLabel="PP time (s)",vLabel="Time shift (s)",cbar="Distance",
-    #       clips1=[0,0.8],width=900,height=600,o=x1right_x2up)
+    #       clips1=[0,0.8],width=900,height=600,o=x1rx2u)
     # efks = WarpUtils.transposeLag(efrsks[0])
     # # print "efks before normalization: min=%g, max=%f"%(min(efks),max(efks))
     # # emax = -Float.MAX_VALUE
@@ -304,27 +306,27 @@ def test1DKS(ppw,ps1,dw,g1,p1s1tA,su,se,s2):
     # # print "efks after normalization: min=%g, max=%g"%(min(efks),max(efks))
     # plot2(efks,title="Accumulate forward KS i2=%d"%i2,s2=su,
     #       hLabel="PP time (s)",vLabel="Time shift (s)",cbar="Distance",
-    #       clips1=[0,0.8],width=900,height=600,o=x1right_x2up)
+    #       clips1=[0,0.8],width=900,height=600,o=x1rx2u)
     # er = WarpUtils.transposeLag(efrs[1])
     # WarpUtils.normalizeErrors(er,-Float.MAX_VALUE,Float.MAX_VALUE)
     # plot2(er,title="Accumulate reverse i2=%d"%i2,s2=su,
     #       hLabel="PP time (s)",vLabel="Time shift (s)",cbar="Distance",
-    #       clips1=[0,0.8],width=900,height=600,o=x1right_x2up)
+    #       clips1=[0,0.8],width=900,height=600,o=x1rx2u)
     # erks = WarpUtils.transposeLag(efrsks[1])
     # WarpUtils.normalizeErrors(erks,-Float.MAX_VALUE,1E20)
     # plot2(erks,title="Accumulate reverse KS i2=%d"%i2,s2=su,
     #       hLabel="PP time (s)",vLabel="Time shift (s)",cbar="Distance",
-    #       clips1=[0,0.8],width=900,height=600,o=x1right_x2up)
+    #       clips1=[0,0.8],width=900,height=600,o=x1rx2u)
     # es = WarpUtils.transposeLag(efrs[2])
     # WarpUtils.normalizeErrors(es,-Float.MAX_VALUE,1E10)
     # plot2(es,title="Smoothed i2=%d"%i2,s2=su,
     #       hLabel="PP time (s)",vLabel="Time shift (s)",cbar="Distance",
-    #       clips1=[0,0.5],width=900,height=600,o=x1right_x2up)
+    #       clips1=[0,0.5],width=900,height=600,o=x1rx2u)
     # esks = WarpUtils.transposeLag(efrsks[2])
     # WarpUtils.normalizeErrors(esks,-Float.MAX_VALUE,1E10)
     # plot2(esks,title="Smoothed i2=%d"%i2,s2=su,
     #       hLabel="PP time (s)",vLabel="Time shift (s)",cbar="Distance",
-    #       clips1=[0,0.5],width=900,height=600,o=x1right_x2up)
+    #       clips1=[0,0.5],width=900,height=600,o=x1rx2u)
     x1u,x2u = getShiftCoordsI2(g1,i2,u)
     x1u,x2u = mul(x1u,d1),mul(x2u,d1)
     x1uks,x2uks= getShiftCoordsI2(g1,i2,uks)
@@ -340,7 +342,7 @@ def test1DKS(ppw,ps1,dw,g1,p1s1tA,su,se,s2):
     plot2(et,pA=uA,x12SingleA=x12SingleA,title="AE i2=%d"%i2,s1=se,s2=su,
           hLabel="PP time (s)",vLabel="Time shift (s)",cbar="Error",
           clips1=[0,0.15],width=900,height=600,hLimits=el,vLimits=ul,
-          o=x1right_x2up)
+          o=x1rx2u)
 
 def getEnvelopeSum(ff):
   htf = HilbertTransformFilter()
@@ -561,11 +563,11 @@ def plotErrors(sf,f,sg,g,dw,uA,desc,fname,x12SliceA=None):
   plot3(e,pA=uA,x12SliceA=x12SliceA,title="AE"+desc,s1=se,s2=su,
         hLabel=fname+" time (s)",vLabel="Vertical shift (s)",cbar="Error",
         clips1=[0,0.15],width=900,height=600,hLimits=el,vLimits=ul,
-        o=x1right_x2up)
+        o=x1rx2u)
   # plot3(e,title="AE"+desc,s1=se,s2=su,
   #       hLabel=fname+" time (s)",vLabel="Vertical shift (s)",cbar="Error",
   #       clips1=[0,0.15],width=900,height=600,hLimits=el,vLimits=ul,
-  #       o=x1right_x2up)
+  #       o=x1rx2u)
 
 ###############################################################################
 run(main)

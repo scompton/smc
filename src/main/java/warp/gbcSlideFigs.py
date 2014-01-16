@@ -4,8 +4,8 @@
 from gbcUtils import *
 
 #############################################################################
-pngDir = "./pngSlides/"
-# pngDir = None
+#pngDir = "./pngSlides/"
+pngDir = None
 baseDir = getBaseDir()
 threeDDir = baseDir+"3D/"
 s1,s2,s3 = getSamplings()
@@ -43,18 +43,18 @@ def main(args):
   dw = DynamicWarpingC(pp,ps1,vpvsAvg)
   setPlotVars(dw)
   printConstraints()
-  # makePpPs1(pp,ps1)
-  # makePs2()
-  # makeSAG(dw,pp)
-  # make1D(dw,pp,ps1)
-  # make1DErrors(pp,ps1)
-  # makeFlatPlots(dw,pp)
-  # makeREGGridAndVpvs(dw,pp)
-  # makeSAGGridAndVpvs(dw,pp)
-  makeEnvelopeImage()
-  # makeFNEvsSAGWarp(dw,pp,ps1)
-  # makeFNEVpvs(dw,pp)
-  # makeInterpolate(pp,ps1,dw)
+  #makePpPs1(pp,ps1)
+  #makePs2()
+  #makeSAG(dw,pp)
+  make1D(dw,pp,ps1)
+  #make1DErrors(pp,ps1)
+  #makeFlatPlots(dw,pp)
+  #makeREGGridAndVpvs(dw,pp)
+  #makeSAGGridAndVpvs(dw,pp)
+  #makeEnvelopeImage()
+  #makeFNEvsSAGWarp(dw,pp,ps1)
+  #makeFNEVpvs(dw,pp)
+  #makeInterpolate(pp,ps1,dw)
 
 def getImages3DSmooth():
   pp = getGbcImage(baseDir,"pp_smooth")
@@ -182,7 +182,7 @@ def make1D(dw,pp,ps1):
   e1 = DynamicWarpingC.transposeLag(e1)
   DynamicWarpingC.normalizeErrors(e1)
   vs,vl,vf,vi,hi,w,h = "Amplitude",[-1.3,1.3],None,1.0,0.5,1096,404
-  # panel = PlotPanel(2,1,x1right_x2up)
+  # panel = PlotPanel(2,1,x1rx2u)
   # panel.mosaic.setHeightElastic(0,100)
   # panel.mosaic.setHeightElastic(1,35)
   # panel.setHLabel("PP time (s)")
@@ -199,7 +199,7 @@ def make1D(dw,pp,ps1):
   # frame.setSize(1372,866)
   # frame.setVisible(True)
   # frame.paintToPng(720.0,7.0,pngDir+"e1f.png")
-  # panel2 = PlotPanel(2,1,x1right_x2up)
+  # panel2 = PlotPanel(2,1,x1rx2u)
   # panel2.mosaic.setHeightElastic(0,100)
   # panel2.mosaic.setHeightElastic(1,35)
   # panel2.setHLabel("PP time (s)")
@@ -219,7 +219,7 @@ def make1D(dw,pp,ps1):
   # frame2.setSize(1372,866)
   # frame2.setVisible(True)
   # frame2.paintToPng(720.0,7.0,pngDir+"e1fu.png")
-  # panel3 = PlotPanel(2,1,x1right_x2up)
+  # panel3 = PlotPanel(2,1,x1rx2u)
   # panel3.mosaic.setHeightElastic(0,100)
   # panel3.mosaic.setHeightElastic(1,35)
   # panel3.setHLabel("PP time (s)")
@@ -239,7 +239,7 @@ def make1D(dw,pp,ps1):
   # frame3.setSize(1372,866)
   # frame3.setVisible(True)
   # frame3.paintToPng(720.0,7.0,pngDir+"e1fur.png")
-  # panel4 = PlotPanel(2,1,x1right_x2up)
+  # panel4 = PlotPanel(2,1,x1rx2u)
   # panel4.mosaic.setHeightElastic(0,100)
   # panel4.mosaic.setHeightElastic(1,35)
   # panel4.setHLabel("PP time (s)")
@@ -575,10 +575,10 @@ def makeInterpolate(pp,ps1,dw):
   hl = [1.0,2.5]
   ptw = 222/2.0
   plot1(ull,g=gum,h=hus,lineWidth=2.0,s=s1,vLabel="PP time (s)",
-        hLabel="Time shift (s)",o=x1down_x2right,width=480,height=900,
+        hLabel="Time shift (s)",o=x1dx2r,width=480,height=900,
         vLimits=vl,pngDir=pngDir,png1="u_interp",ptw=ptw)
   plot1(vll,g=gvm,h=hvs,lineWidth=2.0,s=s1,vLabel="PP time (s)",
-        hLabel="Interval Vp/Vs ratio",o=x1down_x2right,width=480,height=900,
+        hLabel="Interval Vp/Vs ratio",o=x1dx2r,width=480,height=900,
         vLimits=vl,hLimits=hl,pngDir=pngDir,png1="vpvs_interp",ptw=ptw)
 
 def getEnvelopeSum(ff):

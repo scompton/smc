@@ -1,11 +1,12 @@
 #############################################################################
-# Figures for CWP report
+# Figures 
 
 from gbcUtils import *
 from plotUtils import *
 
 #############################################################################
-pngDir = "/Users/scompton/Pictures/gbcThesis/"
+pngDir = "/Users/scompton/Pictures/gbc/"
+#pngDir = None
 baseDir = getBaseDir()
 threeDDir = baseDir+"3D_thesis/"
 s1,s2,s3 = getSamplings()
@@ -53,11 +54,11 @@ def main(args):
   #makePpPs1(pp,ps1) # make PP and PS1 image
   #makeFNEvsSAGErrors(dw,pp,ps1)
   #makeFNEvsSAGWarp(pp,ps1)
-  #makeFNEVpvs(dw,pp)
-  #makeSAGVpvs(dw,pp,ps1)
+  #makeFNEVpvs(dw,pp,"slide")
+  makeSAGVpvs(dw,pp,ps1,"slide")
   #make1DErrors(dw,pp,ps1)
   #makeFlatPlots(dw,pp)
-  makeGridAndVpvs(dw,pp)
+  #makeGridAndVpvs(dw,pp)
   #makeInterpolate(pp,ps1,dw)
 
 def makeREG(sf,f,dg1):
@@ -168,43 +169,64 @@ def makeFNEvsSAGWarp(pp,ps1):
   plot(pswFNE,"pswFNE_zoom")
   plot(pswSAG,"pswSAG_zoom")
 
-def makeFNEVpvs(dw,pp):
+def makeFNEVpvs(dw,pp,pngFormat="geophysics"):
   u = readImage(threeDDir,"u_fne",n1,n2,n3)
   ref = RecursiveExponentialFilter(sigma)
   us = copy(u)
   ref.apply(us,us)
-  ptw = 504.0/2
-  cbw = 100
-  w = 892
-  h = 1000
-  slices = [490,30,78]
+  ptw,png1,png2,pngS = None,None,None,None
+  if pngFormat=="geophysics":
+    w,h,cbw,ptw = 892,1000,100,504.0/2
+    png1 = "vpvsFNE_geophysics"
+    cwp = False
+    slices = [490,30,78]
+  elif pngFormat=="slide":
+    w,h,cbw = 1009,1024,182
+    pngS = "vpvsFNE_slide"
+    cwp = False
+    #slices = [345,83,96]
+    slices = [348,75,72]
   zm = ZeroMask(pp)
   vpvs = WarpUtils.vpvs(s1,us)
   print "vpvsFNE: min=%g, max=%g"%(min(vpvs),max(vpvs))
   zm.apply(0.00,vpvs)
   plotPP3(vpvs,s1=s1,s2=s2,s3=s3,clips1=vClips,label1="PP time (s)",
           cbar="Interval Vp/Vs ratio",cmap1=jet,cbw=cbw,width=w,height=h,
-          limits1=el,slices=slices,ptw=ptw,he0=he0,pngDir=pngDir,png1="vpvsFNE")
+          limits1=el,slices=slices,ptw=ptw,he0=he0,pngDir=pngDir,png1=png1,
+          png2=png2,pngS=pngS)
 
-def makeSAGVpvs(dw,pp,ps1):
+def makeSAGVpvs(dw,pp,ps1,pngFormat="geophysics"):
   uM = readImage(threeDDir,"u_sag_monotonic",n1,n2,n3)
   uL = readImage(threeDDir,"u_sag_linear",n1,n2,n3)
-  ptw = 504.0/2
-  cbw = 100
-  w = 892
-  h = 1000
-  slices = [490,30,78]
+  ptw = None
+  png1M,png2M,pngSM = None,None,None
+  png1L,png2L,pngSL = None,None,None
+  mlabel = "vpvsSAG_monotonic"
+  llabel = "vpvsSAG_linear"
+  if pngFormat=="geophysics":
+    w,h,cbw,ptw = 892,1000,100,504.0/2
+    png1M = mlabel+"_geophysics"
+    png1L = llabel+"_geophysics"
+    cwp = False
+    slices = [490,30,78]
+  elif pngFormat=="slide":
+    w,h,cbw = 1009,1024,182
+    pngSM = mlabel+"_slide"
+    pngSL = llabel+"_slide"
+    cwp = False
+    slices = [345,83,96]
   zm = ZeroMask(pp)
   vpvsM = WarpUtils.vpvs(s1,uM)
   vpvsL = WarpUtils.vpvs(s1,uL)
   zm.apply(0.00,vpvsM)
   zm.apply(0.00,vpvsL)
-  def plot(f,pngName):
+  def plot(f,png1,png2,pngS):
     plotPP3(f,s1=s1,s2=s2,s3=s3,clips1=vClips,label1="PP time (s)",
             cbar="Interval Vp/Vs ratio",cmap1=jet,cbw=cbw,width=w,height=h,
-            ptw=ptw,he0=he0,limits1=el,slices=slices,pngDir=pngDir,png1=pngName)
-  plot(vpvsM,"vpvsSAG_monotonic")
-  plot(vpvsL,"vpvsSAG_linear")
+            ptw=ptw,he0=he0,limits1=el,slices=slices,pngDir=pngDir,png1=png1,
+            png2=png2,pngS=pngS)
+  plot(vpvsM,png1M,png2M,pngSM)
+  plot(vpvsL,png1L,png2L,pngSL)
 
 def make1DErrors(dw,pp,ps1):
   k2,k3 = 28,72
@@ -262,24 +284,25 @@ def makeFlatPlots(dw,pp):
   g3  = getG1D(s3,n3,dg3)
   coordMap  = Viewer3P.getSparseCoordsMap(s1, g1,s2,g2,s3,g3)
   coordMapF = Viewer3P.getSparseCoordsMap(s1,g1f,s2,g2,s3,g3)
-  cm  = [coordMap ,"wO",8.0]
-  cmf = [coordMapF,"wO",8.0]
+  cm  = [coordMap ,"rO",6.0]
+  cmf = [coordMapF,"rO",6.0]
+  ptw = 504.0/2
   cbw = 100
   w = 892
   h = 1000
   slices = [348,75,72]
   def plotImage(f,s1,pngName,cm=None):
     plotPP3(f,coordMap=cm,s1=s1,s2=s2,s3=s3,label1="PP time (s)",limits1=el,
-            limits2=xl,limits3=yl,slices=slices,png=pngDir+pngName,
-            paint=paintGeo2,npng=2,lineColor=Color.YELLOW,he0=he0,cbw=cbw,
-            width=w,height=h)
+            limits2=xl,limits3=yl,slices=slices,pngDir=pngDir,png1=pngName,
+            lineColor=Color.YELLOW,ptw=ptw,he0=he0,cbw=cbw,width=w,height=h)
   plotImage(pp,s1,"pp_mfp")
   plotImage(ff,se,"ppflat")
   plotImage(pp,s1,"pp_sag", cm)
   plotImage(ff,se,"ppflag",cmf)
   plotPP3(fs,s1=se,s2=s2,s3=s3,label1="PP time (s)",clips1=[-50,50],
-          cbar="Flattening shift (ms)",slices=slices,png=pngDir+"ppflatshifts",
-          paint=paintGeo2,npng=2,cmap1=jet,he0=he0,cbw=cbw,width=w,height=h)
+          cbar="Flattening shift (ms)",slices=slices,pngDir=pngDir,
+          png1="ppflatshifts",cmap1=jet,ptw=ptw,he0=he0,cbw=cbw,width=w,
+          height=h)
 
 def makeGridAndVpvs(dw,pp):
   g1r = getG1D(se,ne1,dg1REG)
@@ -291,8 +314,9 @@ def makeGridAndVpvs(dw,pp):
   us  = readImage(threeDDir,"u_sag_monotonic",n1,n2,n3)
   coordMapR = Viewer3P.getSparseCoordsMap(s1,g1r,s2,g2,s3,g3)
   coordMapS = Viewer3P.getSparseCoordsMap(s1,g1s,s2,g2,s3,g3)
-  cmr = [coordMapR,"wO",8.0]
-  cms = [coordMapS,"wO",8.0]
+  cmr = [coordMapR,"rO",6.0]
+  cms = [coordMapS,"rO",6.0]
+  ptw = 504.0/2
   cbw = 100
   w = 892
   h = 1000
@@ -305,8 +329,8 @@ def makeGridAndVpvs(dw,pp):
   def plot(f,pngName,cbar,cm=None,cmap=gray,clips=None,lc=None):
     plotPP3(f,coordMap=cm,s1=s1,s2=s2,s3=s3,clips1=clips,label1="PP time (s)",
             cbar=cbar,cmap1=cmap,cbw=cbw,width=w,height=h,limits1=el,limits2=xl,
-            limits3=yl,slices=slices,lineColor=lc,he0=he0,png=pngDir+pngName,
-            paint=paintGeo2,npng=2)
+            limits3=yl,slices=slices,lineColor=lc,ptw=ptw,he0=he0,pngDir=pngDir,
+            png1=pngName)
   plot(vpvsR,"vpvs_reg","Interval Vp/Vs ratio",cmap=jet,clips=vClips)
   plot(vpvsS,"vpvs_sag","Interval Vp/Vs ratio",cmap=jet,clips=vClips)
   plot(  pp,  "pp_reg","Amplitude",cm=cmr,lc=Color.YELLOW)

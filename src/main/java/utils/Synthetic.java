@@ -82,14 +82,13 @@ public class Synthetic {
     SwingUtilities.invokeLater(new Runnable() {
       @Override
       public void run() {
-        //SimplePlot.asPoints(s,f);
         PlotPanel pp = new PlotPanel();
-        pp.addGrid();
+        //pp.addGrid();
         PointsView pv = pp.addPoints(s,f);
         pv.setStyle("r-");
+        Tile tile = pp.getTile(0,0);
         PlotFrame pf = new PlotFrame(pp);
-        pf.setBackground(Color.BLACK);
-        pf.setForeground(Color.WHITE);
+        tile.setBackground(Color.BLACK);
         pf.setVisible(true);
       }
     });

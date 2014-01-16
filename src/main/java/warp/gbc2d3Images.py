@@ -216,7 +216,7 @@ def goResidual(sf,f,sg,g,dg1,horizons,fname,gname):
   plotVpvs(sf,f,uc,c,fname)
   fsA = [[ua[72],"r-"],[ur[72],"b-"],[uc[72],"k-"]]
   plot1(fsA,sf,title="Shifts",hLabel="Time shift (s)",vLabel=fname+" time (s)",
-        width=400,height=800,o=x1down_x2right)
+        width=400,height=800,o=x1dx2r)
 
 def getPp(i3):
   pp = getGbcImage(baseDir,"pp_smooth")
@@ -404,7 +404,7 @@ def plotErrors(sf,f,sg,g,dw,uA,fname,x12SliceA=None):
   plot3(e,pA=uA,x12SliceA=x12SliceA,title="AE",s1=se,s2=su,
         hLabel=fname+" time (s)",vLabel="Time shift (s)",cbar="Error",
         clips1=[0,0.15],width=900,height=600,hLimits=el,vLimits=ul,
-        o=x1right_x2up)
+        o=x1rx2u)
 
 def plotErrorsAvg(e,dw,uA,fname,x12SingleA=None):
   # Plot Alignment Errors with coarse grid points and shifts
@@ -413,7 +413,7 @@ def plotErrorsAvg(e,dw,uA,fname,x12SingleA=None):
   plot2(e,pA=uA,title="AE",s1=se,s2=su,x12SingleA=x12SingleA,
         hLabel=fname+" time (s)",vLabel="Time shift (s)",cbar="Error",
         clips1=[0,0.5],width=900,height=600,hLimits=el,vLimits=ul,
-        o=x1right_x2up)
+        o=x1rx2u)
 
 ###############################################################################
 run(main)

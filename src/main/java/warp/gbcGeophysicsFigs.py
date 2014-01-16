@@ -1,11 +1,11 @@
 #############################################################################
-# Figures for CWP report
+# Figures for Geophysics
 
 from gbcUtils import *
 from plotUtils import *
 
 #############################################################################
-pngDir = "/Users/scompton/Pictures/gbcThesis/"
+pngDir = "/Users/scompton/Pictures/gbcGeophysics/"
 baseDir = getBaseDir()
 threeDDir = baseDir+"3D_thesis/"
 s1,s2,s3 = getSamplings()
@@ -31,8 +31,8 @@ r1max = (vpvsMax-1.0)/2
 vClips = [vpvsMin,vpvsMax]
 iClips = [-1.5,1.5]
 uClips = [0.0,0.75]
-iMap = bwr
-#iMap = gray
+#iMap = bwr
+iMap = gray
 #k1,k2,k3 = 450,75,72
 k1,k2,k3 = 348,30,97
 slices = [k1,k2,k3]
@@ -52,12 +52,12 @@ def main(args):
   #go3D(s1,pp,s1ps,ps1,dw) # find shifts w/ orig dw
   #makePpPs1(pp,ps1) # make PP and PS1 image
   #makeFNEvsSAGErrors(dw,pp,ps1)
-  #makeFNEvsSAGWarp(pp,ps1)
+  makeFNEvsSAGWarp(pp,ps1)
   #makeFNEVpvs(dw,pp)
   #makeSAGVpvs(dw,pp,ps1)
   #make1DErrors(dw,pp,ps1)
   #makeFlatPlots(dw,pp)
-  makeGridAndVpvs(dw,pp)
+  #makeGridAndVpvs(dw,pp)
   #makeInterpolate(pp,ps1,dw)
 
 def makeREG(sf,f,dg1):
@@ -115,18 +115,17 @@ def getImages3DSmooth():
 def makePpPs1(pp,ps1):
   ppSlices = [348,75,72]
   psSlices = [474,75,72]
-  ptw = 504.0/2
   cbw=100
   w = 865
   h = 1000
-  def plot(f,s1,label1,pngName):
-    plotPP3(f,s1=s1,s2=s2,s3=s3,clips1=iClips,slices=ppSlices,width=w,height=h,
-            label1=label1,limits1=el,limits2=xl,limits3=yl,vInterval1=1.0,
+  def plot(f,s1,slices,label1,limits1,pngName):
+    plotPP3(f,s1=s1,s2=s2,s3=s3,clips1=iClips,slices=slices,width=w,height=h,
+            label1=label1,limits1=limits1,limits2=xl,limits3=yl,vInterval1=1.0,
             vInterval0=2.0,hInterval0=2.0,hInterval1=2.0,cbar="Amplitude",
-            pngDir=pngDir,png2=pngName,ptw=ptw,he0=he0,cbw=cbw,
-            lineColor=Color.YELLOW)
-  plot( pp,  s1,"PP time (s)", "pp") 
-  plot(ps1,s1ps,"PS time (s)","ps1") 
+            png=pngDir+pngName,paint=paintGeo2,npng=2,he0=he0,cbw=cbw,
+            lineColor=Color.WHITE)
+  plot( pp,  s1,ppSlices,"PP time (s)",       el, "pp") 
+  plot(ps1,s1ps,psSlices,"PS time (s)",[0.0,2.8],"ps1") 
 
 def makeFNEvsSAGErrors(dw,pp,ps1):
   k2,k3 = 30,78
@@ -137,16 +136,16 @@ def makeFNEvsSAGErrors(dw,pp,ps1):
   ref = RecursiveExponentialFilter(sigma)
   uFNEs = copy(uFNE)
   ref.apply(uFNEs,uFNEs)
-  pA = [[copy(ne1,uFNE),"FNE","w-",4.0],
-        [copy(ne1,uFNEs),"FNE smooth","c--",4.0],
-        [copy(ne1,uSAG),"SAG","y--",4.0]]
+  pA = [[copy(ne1,uFNE),"FNE","w-",2.0],
+        [copy(ne1,uFNEs),"FNE smooth","w--",4.0],
+        [copy(ne1,uSAG),"SAG","w-.",4.0]]
   e = dw.computeErrors(s1,pp[k3][k2],s1ps,ps1[k3][k2])
   e = Transpose.transpose12(e)
-  warpUtils.normalizeErrors(e)
+  WarpUtils.normalizeErrors(e)
   plot2(e,pA=pA,s1=se,s2=su,hLabel="PP time (s)",vInterval=0.1,
-        vLabel="Time shift (s)",cbar=None,clips1=[0,0.3],width=1109,height=536,
-        hLimits=[0.0,1.0],vLimits=[0.0,0.4],o=x1rx2u,pngDir=pngDir,
-        png2="eFneVsSag",cwp=False)
+        vLabel="Time shift (s)",cbar=None,clips1=[0,0.3],width=1110,height=570,
+        hLimits=[0.0,1.0],vLimits=[0.0,0.4],o=x1rx2u,paint=paintGeo1,
+        png=pngDir+"eFneVsSag")
 
 def makeFNEvsSAGWarp(pp,ps1):
   slices = [190,30,78]
@@ -158,40 +157,63 @@ def makeFNEvsSAGWarp(pp,ps1):
   pswFNE = WarpUtils.applyShifts(s1,uFNEs,s1ps,ps1)
   pswSAG = WarpUtils.applyShifts(s1, uSAG,s1ps,ps1)
   l1,l2,l3 = [0.0,1.0],[0.5,4.0],[0.5,4.0]
-  ptw = 504/3.0
-  def plot(f,pngName):
+  def plot(f,pngName,paint,npng,w):
     plotPP3(f,s1=s1,s2=s2,s3=s3,clips1=iClips,cmap1=iMap,cbar=None,
             label1="PP time (s)",limits1=l1,limits2=l2,limits3=l3,
-            slices=slices,width=778,height=1000,ptw=ptw,he0=he0,pngDir=pngDir,
-            png1=pngName)
-  plot(pp,"pp_zoom")
-  plot(pswFNE,"pswFNE_zoom")
-  plot(pswSAG,"pswSAG_zoom")
+            slices=slices,width=w,height=1000,he0=he0,png=pngDir+pngName,
+            paint=paint,npng=npng,lineColor=Color.WHITE)
+  #plot(pp,"pp_zoom",paintGeo2,3,778)
+  #plot(pswFNE,"pswFNE_zoom",paintGeo2,3,778)
+  #plot(pswSAG,"pswSAG_zoom",paintGeo2,3,778)
+  #plot(pp,"pp_zoom",paintGeo1,1,726)
+  #plot(pswFNE,"pswFNE_zoom",paintGeo1,1,726)
+  #plot(pswSAG,"pswSAG_zoom",paintGeo1,1,726)
+  ppTSlice = zerofloat(n2,n3)
+  pswFNETSlice = zerofloat(n2,n3)
+  pswSAGTSlice = zerofloat(n2,n3)
+  i1 = slices[0]
+  for i3 in range(n3):
+    for i2 in range(n2):
+      ppTSlice[i3][i2] = pp[i3][i2][i1]
+      pswFNETSlice[i3][i2] = pswFNE[i3][i2][i1]
+      pswSAGTSlice[i3][i2] = pswSAG[i3][i2][i1]
+  lh,lv = [0.4,4.3],[1.0,3.0]
+  w = 1008
+  h = 638
+  ptw = 222.0
+  def plotSlice(f,pngName):
+    plot2(f,s1=s2,s2=s3,hLabel="Crossline (km)",vLabel="Inline (km)",
+          clips1=iClips,cmap1=iMap,width=w,height=h,o=x1rx2u,hLimits=lh,
+          vLimits=lv,png=pngDir+pngName,paint=paintGeo1,vInterval=1.0,
+          hInterval=1.0,cbar=None)
+  plotSlice(ppTSlice,"pp_tslice")
+  plotSlice(pswFNETSlice,"pswFNE_tslice")
+  plotSlice(pswSAGTSlice,"pswSAG_tslice")
 
 def makeFNEVpvs(dw,pp):
   u = readImage(threeDDir,"u_fne",n1,n2,n3)
   ref = RecursiveExponentialFilter(sigma)
   us = copy(u)
   ref.apply(us,us)
-  ptw = 504.0/2
   cbw = 100
-  w = 892
   h = 1000
   slices = [490,30,78]
   zm = ZeroMask(pp)
   vpvs = WarpUtils.vpvs(s1,us)
   print "vpvsFNE: min=%g, max=%g"%(min(vpvs),max(vpvs))
   zm.apply(0.00,vpvs)
-  plotPP3(vpvs,s1=s1,s2=s2,s3=s3,clips1=vClips,label1="PP time (s)",
-          cbar="Interval Vp/Vs ratio",cmap1=jet,cbw=cbw,width=w,height=h,
-          limits1=el,slices=slices,ptw=ptw,he0=he0,pngDir=pngDir,png1="vpvsFNE")
+  def plot(f,paint,npng,w):
+    plotPP3(f,s1=s1,s2=s2,s3=s3,clips1=vClips,label1="PP time (s)",
+            cbar="Interval Vp/Vs ratio",cmap1=jet,cbw=cbw,width=w,height=h,
+            limits1=el,slices=slices,he0=he0,png=pngDir+"vpvsFNE",
+            paint=paint,npng=npng)
+  #plot(vpvs,paintGeo2,2,892)
+  plot(vpvs,paintGeo1,1,901)
 
 def makeSAGVpvs(dw,pp,ps1):
   uM = readImage(threeDDir,"u_sag_monotonic",n1,n2,n3)
   uL = readImage(threeDDir,"u_sag_linear",n1,n2,n3)
-  ptw = 504.0/2
   cbw = 100
-  w = 892
   h = 1000
   slices = [490,30,78]
   zm = ZeroMask(pp)
@@ -199,12 +221,15 @@ def makeSAGVpvs(dw,pp,ps1):
   vpvsL = WarpUtils.vpvs(s1,uL)
   zm.apply(0.00,vpvsM)
   zm.apply(0.00,vpvsL)
-  def plot(f,pngName):
+  def plot(f,pngName,paint,npng,w):
     plotPP3(f,s1=s1,s2=s2,s3=s3,clips1=vClips,label1="PP time (s)",
             cbar="Interval Vp/Vs ratio",cmap1=jet,cbw=cbw,width=w,height=h,
-            ptw=ptw,he0=he0,limits1=el,slices=slices,pngDir=pngDir,png1=pngName)
-  plot(vpvsM,"vpvsSAG_monotonic")
-  plot(vpvsL,"vpvsSAG_linear")
+            he0=he0,limits1=el,slices=slices,png=pngDir+pngName,paint=paint,
+            npng=npng)
+  #plot(vpvsM,"vpvsSAG_monotonic",paintGeo2,2,892)
+  #plot(vpvsL,"vpvsSAG_linear",paintGeo2,2,892)
+  plot(vpvsM,"vpvsSAG_monotonic",paintGeo1,1,901)
+  plot(vpvsL,"vpvsSAG_linear",paintGeo1,1,901)
 
 def make1DErrors(dw,pp,ps1):
   k2,k3 = 28,72
@@ -231,19 +256,19 @@ def make1DErrors(dw,pp,ps1):
     return x1,x2
   x1REG,x2REG = getShiftCoords(g1REG,uREG)
   x1SAG,x2SAG = getShiftCoords(g1SAG,uSAG)
-  h = 600
+  h = 632
   w = 1133
-  pA = [[copy(ne1,uSAG),"u-sag","y-.",4.0],[copy(ne1,uREG),"u-reg","c--",4.0]]
-  x12SingleA = [[x1SAG,x2SAG,"sag","yS",18.0],[x1REG,x2REG,"reg","cO",18.0]]
-  fsa = [[ppSub,"k-"],[env,"r-"]]
+  pA = [[copy(ne1,uSAG),"u-sag","w-.",5.0],[copy(ne1,uREG),"u-reg","w--",5.0]]
+  x12SingleA = [[x1SAG,x2SAG,"sag","wS",18.0],[x1REG,x2REG,"reg","wO",18.0]]
+  fsa = [[ppSub,"k-"],[env,"k--"]]
   plot1(fsa,se,hLabel="PP time (s)",vLabel="Amplitude",hLimits=el,
-        vFormat="%11f",width=w,height=280,pngDir=pngDir,png2="envelope",
-        cwp=False,vInterval=1.0)
+        vFormat="%11f",width=w,height=330,png=pngDir+"envelope",paint=paintGeo1,
+        vInterval=1.0,lineWidth=2.0)
   def plotE(pngName,pA=None,x12SingleA=None):
     plot2(e,pA=pA,x12SingleA=x12SingleA,s1=se,s2=su,hLabel="PP time (s)",
-          vLabel="Time shift (s)",clips1=[0,0.3],width=w,height=h,hLimits=el,
-          vLimits=ul,o=x1rx2u,pngDir=pngDir,png2=pngName,cwp=False,
-          vInterval=0.2,hInterval=0.2,cbar=None)
+          vLabel="Time shift (s)",clips1=[0,0.4],width=w,height=h,hLimits=el,
+          vLimits=ul,o=x1rx2u,png=pngDir+pngName,paint=paintGeo1,vInterval=0.2,
+          hInterval=0.2,cbar=None)
   plotE("e_1D")
   plotE("e_1D_sag_reg",pA,x12SingleA)
 
@@ -271,15 +296,16 @@ def makeFlatPlots(dw,pp):
   def plotImage(f,s1,pngName,cm=None):
     plotPP3(f,coordMap=cm,s1=s1,s2=s2,s3=s3,label1="PP time (s)",limits1=el,
             limits2=xl,limits3=yl,slices=slices,png=pngDir+pngName,
-            paint=paintGeo2,npng=2,lineColor=Color.YELLOW,he0=he0,cbw=cbw,
-            width=w,height=h)
+            paint=paintGeo2,npng=2,lineColor=Color.WHITE,he0=he0,cbw=cbw,
+            width=w,height=h) 
   plotImage(pp,s1,"pp_mfp")
   plotImage(ff,se,"ppflat")
   plotImage(pp,s1,"pp_sag", cm)
   plotImage(ff,se,"ppflag",cmf)
-  plotPP3(fs,s1=se,s2=s2,s3=s3,label1="PP time (s)",clips1=[-50,50],
+  plotPP3(fs,s1=se,s2=s2,s3=s3,label1="PP time (s)",clips1=[-25,25],
           cbar="Flattening shift (ms)",slices=slices,png=pngDir+"ppflatshifts",
-          paint=paintGeo2,npng=2,cmap1=jet,he0=he0,cbw=cbw,width=w,height=h)
+          paint=paintGeo2,npng=2,lineColor=Color.WHITE,cmap1=gray,he0=he0,
+          cbw=cbw,width=w,height=h)
 
 def makeGridAndVpvs(dw,pp):
   g1r = getG1D(se,ne1,dg1REG)
@@ -305,8 +331,8 @@ def makeGridAndVpvs(dw,pp):
   def plot(f,pngName,cbar,cm=None,cmap=gray,clips=None,lc=None):
     plotPP3(f,coordMap=cm,s1=s1,s2=s2,s3=s3,clips1=clips,label1="PP time (s)",
             cbar=cbar,cmap1=cmap,cbw=cbw,width=w,height=h,limits1=el,limits2=xl,
-            limits3=yl,slices=slices,lineColor=lc,he0=he0,png=pngDir+pngName,
-            paint=paintGeo2,npng=2)
+            limits3=yl,slices=slices,lineColor=Color.WHITE,he0=he0,
+            png=pngDir+pngName,paint=paintGeo2,npng=2)
   plot(vpvsR,"vpvs_reg","Interval Vp/Vs ratio",cmap=jet,clips=vClips)
   plot(vpvsS,"vpvs_sag","Interval Vp/Vs ratio",cmap=jet,clips=vClips)
   plot(  pp,  "pp_reg","Amplitude",cm=cmr,lc=Color.YELLOW)
@@ -327,14 +353,14 @@ def makeInterpolate(pp,ps1,dw):
   vS = WarpUtils.vpvs(s1,uS)
   ul = [0.0,mu]
   vl = [1.4,2.2]
-  uA = [[uL,"k-"],[uM,"r--"],[uS,"b-."]]
-  vA = [[vL,"k-"],[vM,"r--"],[vS,"b-."]]
-  def plot(pA,vLabel,vLimits,h,pngName):
-    plot1(pA,s=s1,hLabel="PP time (s)",vLabel=vLabel,lineWidth=3.0,
+  uA = [[uL,"k-"],[uM,"k--"],[uS,"k-."]]
+  vA = [[vL,"k-"],[vM,"k--"],[vS,"k-."]]
+  def plot(pA,vLabel,vLimits,h,lineWidth,pngName):
+    plot1(pA,s=s1,hLabel="PP time (s)",vLabel=vLabel,lineWidth=lineWidth,
           o=x1rx2u,width=1078,height=h,hLimits=el,vLimits=vLimits,
-          pngDir=pngDir,png2=pngName,cwp=False)
-  plot(uA,"Time shift (s)",ul,455,"u_interp")
-  plot(vA,"Interval Vp/Vs ratio",vl,300,"vpvs_interp")
+          png=pngDir+pngName,paint=paintGeo1)
+  plot(uA,"Time shift (s)",ul,489,2.0,"u_interp")
+  plot(vA,"Interval Vp/Vs ratio",vl,445,4.0,"vpvs_interp")
 
 def getEnvelope(x,n1):
   htf = HilbertTransformFilter()

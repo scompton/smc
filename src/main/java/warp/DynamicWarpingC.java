@@ -228,17 +228,14 @@ public class DynamicWarpingC {
     double ppl = sPP.valueOfNearest(ppLast);
     ppl = ppl<ppLast ? ppl += sPP.getDelta() : ppl;
     double uMax = psLast-ppl;
-    float dPP = (float)(ppl-sPP.getFirst());
-    float du = (float)(uMax-uMin);
-    float r = du/dPP; // slope from first time & shift to last time & shift
+    Check.argument(uMax>0,"uMax>0");
+    float r = (float)((uMax-uMin)/(ppl-sPP.getFirst()));
     float rMin = (vpvsMin-1.0f)*0.5f;
     float rMax = (vpvsMax-1.0f)*0.5f;
-    float uMinNew = (float)(dPP*rMin-du);
-    float uMaxNew = (float)(dPP*rMax-du);
+    float uMinNew = (float)(ppl*rMin+uMin-uMax);
+    float uMaxNew = (float)(ppl*rMax+uMin-uMax);
     //print("r="+r+", rMin="+rMin+", rMax="+rMax);
-    float g = 2.0f*r+1.0f; // constant Vp/Vs
-    float c = (g+1.0f)*0.5f; // compression constant
-    Check.argument(uMax>0,"uMax>0");
+    float c = 1.0f+r; // compression constant
     int ippl = sPP.indexOfNearest(ppl);
     Sampling s1 = new Sampling(ippl+1,sPP.getDelta(),sPP.getFirst());
     print("DynamicWarpingC fromVpVs:\n"+

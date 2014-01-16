@@ -157,7 +157,7 @@ def makeFNEvsSAGErrors(dw,pp,ps1):
   # DynamicWarpingC.normalizeErrors(e)
   # plot3(e,p=p,p2=p2,p3=p3,s1=se,s2=su,hLabel="PP time (s)",
   #       vLabel="Time shift (s)",cbar=None,clips1=[0,0.15],width=900,height=600,
-  #       hLimits=el,vLimits=ul,o=x1right_x2up)
+  #       hLimits=el,vLimits=ul,o=x1rx2u)
   uFNE = mul(uFNE[k3][k2],d1)
   uFNEs = mul(uFNEs[k3][k2],d1)
   uSAG = mul(uSAG[k3][k2],d1)
@@ -170,7 +170,7 @@ def makeFNEvsSAGErrors(dw,pp,ps1):
   DynamicWarpingC.normalizeErrors(e1)
   plot2(e1,p=p,p2=p2,p3=p3,s1=se,s2=su,hLabel="PP time (s)",vInterval=0.1,
         vLabel="Time shift (s)",cbar=None,clips1=[0,0.3],width=1064,height=536,
-        hLimits=[0.0,1.0],vLimits=[0.0,0.4],o=x1right_x2up,pngDir=pngDir,
+        hLimits=[0.0,1.0],vLimits=[0.0,0.4],o=x1rx2u,pngDir=pngDir,
         png1="eFneVsSag",ptw=ptw)
 
 def makeFNEvsSAGWarp(dw,pp,ps1):
@@ -288,11 +288,11 @@ def make1DErrors(pp,ps1):
   # preg = [uREG,"u-reg","w-",2.0]
   # plot2(e,p=preg,x11=x1REG,x21=x2REG,s1=se,s2=su,hLabel="PP time (s)",
   #       vLabel="Time shift (s)",clips1=[0,0.3],width=1096,height=600,
-  #       hLimits=el,vLimits=ul,o=x1right_x2up,pngDir=pngDir,png1="ae_1D_reg",
+  #       hLimits=el,vLimits=ul,o=x1rx2u,pngDir=pngDir,png1="ae_1D_reg",
   #       vInterval=0.2,hInterval=0.2,cbar=None)
   plot2(e,s1=se,s2=su,hLabel="PP time (s)",
         vLabel="Time shift (s)",clips1=[0,0.3],width=1096,height=600,
-        hLimits=el,vLimits=ul,o=x1right_x2up,pngDir=pngDir,png1="e_1D",
+        hLimits=el,vLimits=ul,o=x1rx2u,pngDir=pngDir,png1="e_1D",
         vInterval=0.2,hInterval=0.2,cbar=None)
   uSAG = dw.findSparseShifts(r1min,r1max,g1SAG)
   uSAG = DynamicWarpingC.interpolate(ne1,g1SAG,uSAG,True)
@@ -312,11 +312,11 @@ def make1DErrors(pp,ps1):
         vFormat="%11f",width=1096,height=400,pngDir=pngDir,png1="envelope")
   # plot2(e,p=psag,p2=preg,x11=x1SAG,x21=x2SAG,s1=se,s2=su,hLabel="PP time (s)",
   #       vLabel="Time shift (s)",clips1=[0,0.3],width=1096,height=600,
-  #       hLimits=el,vLimits=ul,o=x1right_x2up,pngDir=pngDir,png1="ae_1D_sag",
+  #       hLimits=el,vLimits=ul,o=x1rx2u,pngDir=pngDir,png1="ae_1D_sag",
   #       vInterval=0.2,hInterval=0.2,cbar=None)
   plot2(e,p=psag,p2=preg,x12a=x12SAG,x12b=x12REG,s1=se,s2=su,hLabel="PP time (s)",
         vLabel="Time shift (s)",clips1=[0,0.3],width=1096,height=600,
-        hLimits=el,vLimits=ul,o=x1right_x2up,pngDir=pngDir,png1="e_1D_sag_reg",
+        hLimits=el,vLimits=ul,o=x1rx2u,pngDir=pngDir,png1="e_1D_sag_reg",
         vInterval=0.2,hInterval=0.2,cbar=None)
 
 def makeFlatPlots(dw,pp):
@@ -485,10 +485,10 @@ def makeInterpolate(pp,ps1,dw):
   hl = [1.0,2.5]
   ptw = 222/2.0
   plot1(ull,g=gum,h=hus,lineWidth=2.0,s=s1,vLabel="PP time (s)",
-        hLabel="Time shift (s)",o=x1down_x2right,width=480,height=900,
+        hLabel="Time shift (s)",o=x1dx2r,width=480,height=900,
         vLimits=vl,pngDir=pngDir,png1="u_interp",ptw=ptw)
   plot1(vll,g=gvm,h=hvs,lineWidth=2.0,s=s1,vLabel="PP time (s)",
-        hLabel="Interval Vp/Vs ratio",o=x1down_x2right,width=480,height=900,
+        hLabel="Interval Vp/Vs ratio",o=x1dx2r,width=480,height=900,
         vLimits=vl,hLimits=hl,pngDir=pngDir,png1="vpvs_interp",ptw=ptw)
 
 def getEnvelopeSum(ff):

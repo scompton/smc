@@ -59,7 +59,7 @@ def go3(ppName,ps1Name,ps2Name,dg1,dg2,dgS,hw2,hw3):
   u2c = WarpUtils.compositeShifts(sf,u1,uSPP)
   sf,u2 = goPpPs2(ppName,ps2Name,dg2,hw2,hw3,uc=u2c)
   plot1([[u1,"k-"],[u2,"r-"],[u2c,"b-"]],sf,title="shifts",width=400,height=800,
-        o=x1down_x2right)
+        o=x1dx2r)
   gammaS = WarpUtils.gammaS(sf,u1,u2)
   gammaSc = WarpUtils.gammaS(sf,u1,u2c)
   plotGammaS([[gammaS,"k-"]],sf,"PP",desc="")
@@ -323,7 +323,7 @@ def plotError2(e,se,su,uA,hname,desc):
   ul = [su.getFirst(),su.getLast()]
   plot2(e,pA=uA,title="AE "+desc,s1=se,s2=su,hLabel=hname+" time (s)",
         vLabel="Vertical shift (s)",cbar="Error",clips1=[0,0.2],width=1200,
-        height=600,hLimits=el,vLimits=ul,cbw=100,o=x1right_x2up)
+        height=600,hLimits=el,vLimits=ul,cbw=100,o=x1rx2u)
 
 def plotError3(e,se,su1,suS,u1,uS):
   e = Transpose.transpose132(e)
@@ -336,19 +336,19 @@ def plotError3(e,se,su1,suS,u1,uS):
 def plotWarped(wA,s,se,vname,desc):
   el = [se.getFirst(),se.getLast()]
   plot1(wA,title=desc+" warped",s=s,vLabel=vname+" time (s)",
-        width=400,height=900,vLimits=el,o=x1down_x2right)
+        width=400,height=900,vLimits=el,o=x1dx2r)
 
 def plotVpVs(u,s,vname,desc):
   vpvs = WarpUtils.vpvs(s,u)
   plot1([[vpvs,"k-"]],title=desc,s=s,vLabel=vname+" time (s)",hLabel="Vp/Vs",
-        width=400,height=900,hLimits=[vpvsMin,vpvsMax],o=x1down_x2right)
+        width=400,height=900,hLimits=[vpvsMin,vpvsMax],o=x1dx2r)
 
 def plotGammaS(gA,s,vname,desc=""):
   title="gammaS"
   if desc:
     title = title+" "+desc
   plot1(gA,title="gammaS "+desc,s=s,vLabel=vname+" time (s)",
-      hLabel="",width=400,height=900,hLimits=[-0.1,0.1],o=x1down_x2right)
+      hLabel="",width=400,height=900,hLimits=[-0.1,0.1],o=x1dx2r)
 
 def getXYZ(se,u1,uS):
   n1 = se.getCount()
